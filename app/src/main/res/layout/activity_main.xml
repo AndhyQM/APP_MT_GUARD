@@ -1,61 +1,248 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center_horizontal">
+    android:fillViewport="true"
+    android:background="@color/bg_primary">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="MT GUARD"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="32dp" />
-
-    <EditText
-        android:id="@+id/etNumero"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:hint="Número ej: +51987654321"
-        android:inputType="phone"
-        android:padding="12dp"
-        android:textSize="16sp" />
-
-    <Button
-        android:id="@+id/btnGuardar"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Guardar número"
-        android:layout_marginTop="12dp" />
-
-    <TextView
-        android:id="@+id/tvEstado"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sin número guardado"
-        android:gravity="center"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="40dp" />
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <Button
-        android:id="@+id/btnAlerta"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:text="ENVIAR\nALERTA"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_gravity="center" />
+        <!-- ═══ HEADER ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
 
-    <TextView
-        android:id="@+id/tvUltimoEnvio"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:gravity="center"
-        android:layout_marginTop="16dp" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="MT GUARD"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent"
+                android:letterSpacing="0.1" />
 
-</LinearLayout>
+            <!-- Indicador BLE -->
+            <View
+                android:id="@+id/viewBleDot"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="@drawable/status_dot_disconnected"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/tvBleStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Desconectado"
+                android:textSize="13sp"
+                android:textColor="@color/status_danger" />
+        </LinearLayout>
+
+        <!-- ═══ CARD: ESTADO DEL VEHÍCULO ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ESTADO DEL VEHÍCULO"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_secondary"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Contacto -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <View
+                    android:id="@+id/dotContacto"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/status_dot_disconnected"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Contacto"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tvContacto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CERRADO"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <!-- Arranque -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <View
+                    android:id="@+id/dotArranque"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/status_dot_disconnected"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Arranque"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tvArranque"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="OFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <!-- Estado de autenticación -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/dotAuth"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/status_dot_disconnected"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Autenticación"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tvAuth"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NO"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/status_danger" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══ BOTONES DE CONTROL ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Botón ARRANCAR -->
+            <Button
+                android:id="@+id/btnArrancar"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_weight="1"
+                android:text="ARRANCAR"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/bg_primary"
+                android:background="@drawable/btn_arranque_bg"
+                android:layout_marginEnd="8dp"
+                android:enabled="false" />
+
+            <!-- Botón DESBLOQUEAR -->
+            <Button
+                android:id="@+id/btnDesbloquear"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_weight="1"
+                android:text="DESBLOQUEAR"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/bg_primary"
+                android:background="@drawable/btn_desbloquear_bg"
+                android:layout_marginStart="8dp"
+                android:enabled="false" />
+        </LinearLayout>
+
+        <!-- ═══ BOTÓN CONECTAR / DESCONECTAR BLE ═══ -->
+        <Button
+            android:id="@+id/btnConectar"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="CONECTAR"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/accent"
+            android:background="@drawable/btn_config_bg"
+            android:layout_marginBottom="16dp" />
+
+        <!-- ═══ BOTÓN ALERTA ═══ -->
+        <Button
+            android:id="@+id/btnAlerta"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="ENVIAR ALERTA"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/btn_alerta_bg"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/tvUltimoEnvio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Último envío: nunca"
+            android:textSize="12sp"
+            android:textColor="@color/text_hint"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
+
+        <!-- ═══ BOTÓN CONFIGURACIONES ═══ -->
+        <Button
+            android:id="@+id/btnConfig"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="CONFIGURACIONES"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:background="@drawable/btn_config_bg" />
+
+    </LinearLayout>
+</ScrollView>

@@ -22,7 +22,6 @@ class AuthActivity : AppCompatActivity() {
     private lateinit var btnAccion: Button
     private lateinit var tvOlvide: TextView
 
-    // Modos de pantalla
     private var modo = Modo.LOGIN
 
     enum class Modo { CREAR_PIN, LOGIN, RECUPERAR, NUEVO_PIN }
@@ -38,22 +37,20 @@ class AuthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_auth)
 
-        tvTitulo = findViewById(R.id.tvTitulo)
-        etPin = findViewById(R.id.etPin)
+        tvTitulo     = findViewById(R.id.tvTitulo)
+        etPin        = findViewById(R.id.etPin)
         etPinConfirm = findViewById(R.id.etPinConfirm)
-        etPregunta = findViewById(R.id.etPregunta)
-        etRespuesta = findViewById(R.id.etRespuesta)
-        btnAccion = findViewById(R.id.btnAccion)
-        tvOlvide = findViewById(R.id.tvOlvide)
+        etPregunta   = findViewById(R.id.etPregunta)
+        etRespuesta  = findViewById(R.id.etRespuesta)
+        btnAccion    = findViewById(R.id.btnAccion)
+        tvOlvide     = findViewById(R.id.tvOlvide)
 
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
         val pinGuardado = prefs.getString(KEY_PIN, null)
 
         if (pinGuardado == null) {
-            // Primera vez: crear PIN
             mostrarCrearPin()
         } else {
-            // Ya tiene PIN: intentar biométrico
             mostrarLogin()
             intentarBiometrico()
         }
@@ -67,14 +64,13 @@ class AuthActivity : AppCompatActivity() {
             }
         }
 
-        tvOlvide.setOnClickListener {
-            mostrarRecuperar()
-        }
+        tvOlvide.setOnClickListener { mostrarRecuperar() }
     }
 
-    // =========================================================================
-    // Crear PIN por primera vez
-    // =========================================================================
+    // ══════════════════════════════════════════════════
+    //  MODOS DE LA PANTALLA
+    // ══════════════════════════════════════════════════
+
     private fun mostrarCrearPin() {
         modo = Modo.CREAR_PIN
         tvTitulo.text = "Crea tu PIN"
@@ -83,13 +79,62 @@ class AuthActivity : AppCompatActivity() {
         etPregunta.visibility = View.VISIBLE
         etRespuesta.visibility = View.VISIBLE
         tvOlvide.visibility = View.GONE
-        btnAccion.text = "Crear PIN"
-
+        btnAccion.text = "CREAR PIN"
         etPin.hint = "PIN (4 dígitos)"
         etPinConfirm.hint = "Confirmar PIN"
         etPregunta.hint = "Ej: Nombre de tu mascota"
         etRespuesta.hint = "Tu respuesta"
     }
+
+    private fun mostrarLogin() {
+        modo = Modo.LOGIN
+        tvTitulo.text = "Ingresa tu PIN"
+        etPin.visibility = View.VISIBLE
+        etPinConfirm.visibility = View.GONE
+        etPregunta.visibility = View.GONE
+        etRespuesta.visibility = View.GONE
+        tvOlvide.visibility = View.VISIBLE
+        btnAccion.text = "ENTRAR"
+        etPin.hint = "PIN"
+        etPin.setText("")
+    }
+
+    private fun mostrarRecuperar() {
+        modo = Modo.RECUPERAR
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val pregunta = prefs.getString(KEY_PREGUNTA, "")
+
+        tvTitulo.text = "Recuperar PIN"
+        etPin.visibility = View.GONE
+        etPinConfirm.visibility = View.GONE
+        etPregunta.visibility = View.VISIBLE
+        etRespuesta.visibility = View.VISIBLE
+        tvOlvide.visibility = View.GONE
+        btnAccion.text = "VERIFICAR"
+        etPregunta.setText(pregunta)
+        etPregunta.isEnabled = false
+        etRespuesta.setText("")
+        etRespuesta.hint = "Tu respuesta"
+    }
+
+    private fun mostrarNuevoPin() {
+        modo = Modo.NUEVO_PIN
+        tvTitulo.text = "Crea nuevo PIN"
+        etPin.visibility = View.VISIBLE
+        etPinConfirm.visibility = View.VISIBLE
+        etPregunta.visibility = View.GONE
+        etRespuesta.visibility = View.GONE
+        tvOlvide.visibility = View.GONE
+        btnAccion.text = "GUARDAR NUEVO PIN"
+        etPin.setText("")
+        etPinConfirm.setText("")
+        etPin.hint = "Nuevo PIN (4 dígitos)"
+        etPinConfirm.hint = "Confirmar nuevo PIN"
+    }
+
+    // ══════════════════════════════════════════════════
+    //  LÓGICA
+    // ══════════════════════════════════════════════════
 
     private fun crearPin() {
         val pin = etPin.text.toString().trim()
@@ -121,22 +166,6 @@ class AuthActivity : AppCompatActivity() {
         entrarApp()
     }
 
-    // =========================================================================
-    // Login con PIN
-    // =========================================================================
-    private fun mostrarLogin() {
-        modo = Modo.LOGIN
-        tvTitulo.text = "Ingresa tu PIN"
-        etPin.visibility = View.VISIBLE
-        etPinConfirm.visibility = View.GONE
-        etPregunta.visibility = View.GONE
-        etRespuesta.visibility = View.GONE
-        tvOlvide.visibility = View.VISIBLE
-        btnAccion.text = "Entrar"
-        etPin.hint = "PIN"
-        etPin.setText("")
-    }
-
     private fun verificarPin() {
         val pin = etPin.text.toString().trim()
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
@@ -150,71 +179,6 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================================================
-    // Biométrico
-    // =========================================================================
-    private fun intentarBiometrico() {
-        val biometricManager = BiometricManager.from(this)
-
-        if (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG
-                    or BiometricManager.Authenticators.BIOMETRIC_WEAK)
-            != BiometricManager.BIOMETRIC_SUCCESS) {
-            // No hay biométrico disponible, usa PIN
-            return
-        }
-
-        val executor = ContextCompat.getMainExecutor(this)
-
-        val callback = object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                super.onAuthenticationSucceeded(result)
-                entrarApp()
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                super.onAuthenticationError(errorCode, errString)
-                // Usuario canceló, se queda en pantalla de PIN
-            }
-
-            override fun onAuthenticationFailed() {
-                super.onAuthenticationFailed()
-                Toast.makeText(this@AuthActivity, "Huella no reconocida", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        val biometricPrompt = BiometricPrompt(this, executor, callback)
-
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("MT GUARD")
-            .setSubtitle("Usa tu huella para entrar")
-            .setNegativeButtonText("Usar PIN")
-            .build()
-
-        biometricPrompt.authenticate(promptInfo)
-    }
-
-    // =========================================================================
-    // Recuperar PIN
-    // =========================================================================
-    private fun mostrarRecuperar() {
-        modo = Modo.RECUPERAR
-        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
-        val pregunta = prefs.getString(KEY_PREGUNTA, "")
-
-        tvTitulo.text = "Recuperar PIN"
-        etPin.visibility = View.GONE
-        etPinConfirm.visibility = View.GONE
-        etPregunta.visibility = View.VISIBLE
-        etRespuesta.visibility = View.VISIBLE
-        tvOlvide.visibility = View.GONE
-        btnAccion.text = "Verificar"
-
-        etPregunta.setText(pregunta)
-        etPregunta.isEnabled = false
-        etRespuesta.setText("")
-        etRespuesta.hint = "Tu respuesta"
-    }
-
     private fun verificarRespuesta() {
         val respuesta = etRespuesta.text.toString().trim()
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
@@ -226,24 +190,6 @@ class AuthActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "Respuesta incorrecta", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    // =========================================================================
-    // Crear nuevo PIN después de recuperar
-    // =========================================================================
-    private fun mostrarNuevoPin() {
-        modo = Modo.NUEVO_PIN
-        tvTitulo.text = "Crea nuevo PIN"
-        etPin.visibility = View.VISIBLE
-        etPinConfirm.visibility = View.VISIBLE
-        etPregunta.visibility = View.GONE
-        etRespuesta.visibility = View.GONE
-        tvOlvide.visibility = View.GONE
-        btnAccion.text = "Guardar nuevo PIN"
-        etPin.setText("")
-        etPinConfirm.setText("")
-        etPin.hint = "Nuevo PIN (4 dígitos)"
-        etPinConfirm.hint = "Confirmar nuevo PIN"
     }
 
     private fun crearNuevoPin() {
@@ -261,14 +207,48 @@ class AuthActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
         prefs.edit().putString(KEY_PIN, pin.hashCode().toString()).apply()
-
         Toast.makeText(this, "PIN actualizado", Toast.LENGTH_SHORT).show()
         entrarApp()
     }
 
-    // =========================================================================
-    // Entrar a la app
-    // =========================================================================
+    // ══════════════════════════════════════════════════
+    //  BIOMÉTRICO
+    // ══════════════════════════════════════════════════
+
+    private fun intentarBiometrico() {
+        val biometricManager = BiometricManager.from(this)
+        if (biometricManager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG
+                        or BiometricManager.Authenticators.BIOMETRIC_WEAK)
+            != BiometricManager.BIOMETRIC_SUCCESS) {
+            return
+        }
+
+        val executor = ContextCompat.getMainExecutor(this)
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                super.onAuthenticationSucceeded(result)
+                entrarApp()
+            }
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                super.onAuthenticationError(errorCode, errString)
+            }
+            override fun onAuthenticationFailed() {
+                super.onAuthenticationFailed()
+                Toast.makeText(this@AuthActivity, "Huella no reconocida", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val biometricPrompt = BiometricPrompt(this, executor, callback)
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("MT GUARD")
+            .setSubtitle("Usa tu huella para entrar")
+            .setNegativeButtonText("Usar PIN")
+            .build()
+
+        biometricPrompt.authenticate(promptInfo)
+    }
+
     private fun entrarApp() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
