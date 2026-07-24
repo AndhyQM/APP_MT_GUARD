@@ -9,7 +9,6 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 
 class ConfigBeaconActivity : AppCompatActivity() {
@@ -27,7 +26,6 @@ class ConfigBeaconActivity : AppCompatActivity() {
     }
 
     private lateinit var etMacAddress: EditText
-    private lateinit var switchBeacon: SwitchCompat
     private lateinit var dotContacto: View
     private lateinit var tvContactoEstado: TextView
     private lateinit var dotArranque: View
@@ -50,7 +48,6 @@ class ConfigBeaconActivity : AppCompatActivity() {
 
     private fun enlazarVistas() {
         etMacAddress = findViewById(R.id.etMacAddress)
-        switchBeacon = findViewById(R.id.switchBeacon)
         dotContacto = findViewById(R.id.dotContacto)
         tvContactoEstado = findViewById(R.id.tvContactoEstado)
         dotArranque = findViewById(R.id.dotArranque)
@@ -102,7 +99,6 @@ class ConfigBeaconActivity : AppCompatActivity() {
     }
 
     private fun configurarBotones() {
-        // Guardar MAC
         findViewById<View>(R.id.btnGuardarMac).setOnClickListener {
             val mac = etMacAddress.text.toString().trim()
 
@@ -124,34 +120,6 @@ class ConfigBeaconActivity : AppCompatActivity() {
                 Toast.LENGTH_SHORT
             ).show()
         }
-
-        // Switch Beacon ON/OFF — envía por GATT si está conectado
-        switchBeacon.setOnCheckedChangeListener { _, isChecked ->
-            // Crear BleManager solo para acceder al estado compartido
-            val bleManager = BleManager(
-                context = this,
-                onConnectionChange = {},
-                onAuthenticated = {},
-                onData = {},
-                onError = {}
-            )
-
-            if (bleManager.isConnected && bleManager.isAuthenticated) {
-                if (isChecked) {
-                    bleManager.sendBeaconOn()
-                    Toast.makeText(this, "Beacon activado", Toast.LENGTH_SHORT).show()
-                } else {
-                    bleManager.sendBeaconOff()
-                    Toast.makeText(this, "Beacon desactivado", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                Toast.makeText(
-                    this,
-                    "Requiere conexión activa para enviar comando",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
     }
 
     // ═══════════════════════════════════════════════
@@ -164,7 +132,7 @@ class ConfigBeaconActivity : AppCompatActivity() {
 
         beaconScanner = BeaconScanner(
             context = this,
-            targetMac = macGuardada, // Filtra por MAC guardada, null si no hay
+            targetMac = macGuardada,
 
             onVehicleState = { contacto, arranque ->
                 runOnUiThread {

@@ -38,7 +38,7 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:letterSpacing="0.08"
-                android:text="CONFIGURAR BEACON"
+                android:text="CONFIGURAR PERFIL"
                 android:textColor="@color/accent_light"
                 android:textSize="@dimen/title_text_size"
                 android:textStyle="bold" />
@@ -51,13 +51,33 @@
             android:layout_marginTop="12dp"
             android:background="@color/divider" />
 
-        <!-- ═══ SECCIÓN: MAC DEL DISPOSITIVO ═══ -->
+        <!-- ═══ ÍCONO CENTRAL ═══ -->
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="32dp"
+            android:contentDescription="Perfil"
+            android:src="@drawable/ic_settings_profile"
+            app:tint="@color/accent_light" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:text="Configura el número de teléfono\ndonde recibirás las alertas SMS"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp" />
+
+        <!-- ═══ SECCIÓN: NÚMERO DE TELÉFONO ═══ -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
             android:letterSpacing="0.06"
-            android:text="DIRECCIÓN MAC"
+            android:text="NÚMERO DE ALERTA SMS"
             android:textColor="@color/accent_light"
             android:textSize="13sp"
             android:textStyle="bold" />
@@ -67,11 +87,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:lineSpacingExtra="3dp"
-            android:text="Se configura automáticamente al conectar con un módulo MT Guard. Puedes editarla manualmente si lo necesitas."
+            android:text="Este número recibirá un SMS cuando el módulo MT Guard detecte una situación de alerta en el vehículo."
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
-        <!-- Campo MAC -->
+        <!-- Campo número -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -81,40 +101,46 @@
             android:orientation="horizontal"
             android:padding="16dp">
 
-            <ImageView
-                android:layout_width="28dp"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+51"
+                android:textColor="@color/accent_light"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="1dp"
                 android:layout_height="28dp"
-                android:contentDescription="Bluetooth"
-                android:src="@drawable/ic_settings_beacon"
-                app:tint="@color/accent_light" />
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@color/divider" />
 
             <EditText
-                android:id="@+id/etMacAddress"
+                android:id="@+id/etPhoneNumber"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:fontFamily="monospace"
-                android:hint="AA:BB:CC:DD:EE:FF"
-                android:inputType="textCapCharacters|textNoSuggestions"
-                android:letterSpacing="0.08"
-                android:maxLength="17"
+                android:hint="999 999 999"
+                android:inputType="phone"
+                android:letterSpacing="0.06"
+                android:maxLength="11"
                 android:maxLines="1"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_hint"
                 android:textSize="16sp" />
         </LinearLayout>
 
-        <!-- Botón guardar MAC -->
+        <!-- Botón guardar -->
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnGuardarMac"
+            android:id="@+id/btnGuardarNumero"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="18dp"
             android:background="@drawable/panel_button_blue"
             android:letterSpacing="0.04"
-            android:text="GUARDAR MAC"
+            android:text="GUARDAR NÚMERO"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -124,109 +150,54 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="26dp"
+            android:layout_marginTop="28dp"
             android:background="@color/divider" />
 
-        <!-- ═══ SECCIÓN: DATOS EN TIEMPO REAL ═══ -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:letterSpacing="0.06"
-            android:text="DATOS DEL VEHÍCULO"
-            android:textColor="@color/accent_light"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:lineSpacingExtra="3dp"
-            android:text="Estado reportado por el módulo en tiempo real."
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
-        <!-- Indicador: Contacto -->
+        <!-- ═══ ESTADO GUARDADO ═══ -->
         <LinearLayout
+            android:id="@+id/layoutNumeroGuardado"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="20dp"
             android:background="@drawable/settings_option_bg"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="18dp">
+            android:padding="18dp"
+            android:visibility="gone">
 
             <View
-                android:id="@+id/dotContacto"
+                android:id="@+id/dotEstado"
                 android:layout_width="10dp"
                 android:layout_height="10dp"
-                android:background="@drawable/status_dot_disconnected" />
+                android:background="@drawable/status_dot_connected" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="14dp"
                 android:layout_weight="1"
-                android:text="Contacto"
+                android:text="Número configurado"
                 android:textColor="@color/text_primary"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
 
             <TextView
-                android:id="@+id/tvContactoEstado"
+                android:id="@+id/tvNumeroGuardado"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:letterSpacing="0.04"
-                android:text="CERRADO"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
+                android:textColor="@color/accent_light"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Indicador: Arranque -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/settings_option_bg"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="18dp">
-
-            <View
-                android:id="@+id/dotArranque"
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:background="@drawable/status_dot_disconnected" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:text="Arranque"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/tvArranqueEstado"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.04"
-                android:text="INACTIVO"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Último dato recibido -->
+        <!-- Nota -->
         <TextView
-            android:id="@+id/tvUltimaActualizacion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="20dp"
             android:gravity="center"
-            android:text="Sin datos recibidos"
+            android:lineSpacingExtra="3dp"
+            android:text="La app necesita el permiso de SMS para enviar alertas. Se te pedirá al momento de enviar."
             android:textColor="@color/text_hint"
             android:textSize="11sp" />
 

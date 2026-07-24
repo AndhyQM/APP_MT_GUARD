@@ -140,6 +140,17 @@ class ScannerActivity : AppCompatActivity() {
         btnScan = findViewById(R.id.btnScan)
         connectionOverlay = findViewById(R.id.connectionOverlay)
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus)
+
+        // Botón de configuración — accesible sin conectar al ESP32
+        findViewById<View>(R.id.btnConfig).setOnClickListener {
+            startActivity(
+                Intent(this, ConfigPinActivity::class.java)
+            )
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+        }
     }
 
     private fun configurarBleManager() {

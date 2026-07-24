@@ -79,6 +79,14 @@
             android:name=".ConfigBeaconActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ConfigProfileActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ConfigModuleActivity"
+            android:exported="false" />
+
         <service
             android:name=".GuardService"
             android:exported="false"

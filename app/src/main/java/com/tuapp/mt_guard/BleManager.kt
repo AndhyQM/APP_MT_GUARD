@@ -492,6 +492,14 @@ class BleManager(
         enviarComando("BEACON_OFF")
     }
 
+    fun sendCommand(command: String) {
+        if (!sharedAuthenticated) {
+            notificarError("Dispositivo no autenticado")
+            return
+        }
+        enviarComando(command)
+    }
+
     @SuppressLint("MissingPermission")
     private fun enviarComando(command: String): Boolean {
         val characteristic = sharedRxCharacteristic

@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_splash"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/screen_padding_h"
+        android:paddingTop="@dimen/screen_padding_top"
+        android:paddingEnd="@dimen/screen_padding_h"
+        android:paddingBottom="@dimen/screen_padding_bottom">
+
+        <!-- ═══ ENCABEZADO ═══ -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/header_height">
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="@dimen/header_button_size"
+                android:layout_height="@dimen/header_button_size"
+                android:layout_gravity="start|center_vertical"
+                android:background="@android:color/transparent"
+                android:contentDescription="Volver"
+                android:padding="9dp"
+                app:srcCompat="@drawable/ic_back_panel"
+                app:tint="@color/accent_light" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:letterSpacing="0.08"
+                android:text="MT GUARD MODULE"
+                android:textColor="@color/accent_light"
+                android:textSize="@dimen/title_text_size"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <!-- ═══ SEPARADOR ═══ -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:background="@color/divider" />
+
+        <!-- ═══ ESTADO DE CONEXIÓN ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/dotConexion"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/status_dot_disconnected" />
+
+            <TextView
+                android:id="@+id/tvEstadoConexion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Módulo no conectado"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- ═══ SECCIÓN: VOLUMEN ═══ -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="26dp"
+            android:letterSpacing="0.06"
+            android:text="VOLUMEN DEL MÓDULO"
+            android:textColor="@color/accent_light"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:text="Controla el volumen de las alertas de audio del módulo MT Guard."
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/settings_option_bg"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="Volumen"
+                    android:src="@drawable/ic_settings_module"
+                    app:tint="@color/accent_light" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="Volumen"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tvVolumen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="30"
+                    android:textColor="@color/accent_light"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seekVolumen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:max="30"
+                android:progress="30"
+                android:progressTint="@color/accent_light"
+                android:thumbTint="@color/accent_light" />
+        </LinearLayout>
+
+        <!-- ═══ SEPARADOR ═══ -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="26dp"
+            android:background="@color/divider" />
+
+        <!-- ═══ SECCIÓN: CONTROL DE SALIDAS ═══ -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:letterSpacing="0.06"
+            android:text="CONTROL DE SALIDAS"
+            android:textColor="@color/accent_light"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:lineSpacingExtra="3dp"
+            android:text="Habilita o deshabilita las salidas del módulo. Si una salida está deshabilitada, el módulo ignorará el comando."
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <!-- Switch: Puerta -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/settings_option_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Desbloqueo de puerta"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Permite abrir la puerta desde la app"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchPuerta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                app:thumbTint="@color/accent_light"
+                app:trackTint="@color/border_input" />
+        </LinearLayout>
+
+        <!-- Switch: Arranque -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/settings_option_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Arranque remoto"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Permite arrancar el vehículo desde la app"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchArranque"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                app:thumbTint="@color/accent_light"
+                app:trackTint="@color/border_input" />
+        </LinearLayout>
+
+        <!-- Switch: Beacon -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/settings_option_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Beacon (advertising)"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Transmite el estado del vehículo por BLE"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchBeacon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                app:thumbTint="@color/accent_light"
+                app:trackTint="@color/border_input" />
+        </LinearLayout>
+
+        <!-- ═══ SEPARADOR ═══ -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="26dp"
+            android:background="@color/divider" />
+
+        <!-- Nota -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:text="Los cambios se envían al módulo en tiempo real.\nRequiere conexión activa con el dispositivo."
+            android:textColor="@color/text_hint"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+</ScrollView>
