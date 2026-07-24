@@ -1,6 +1,7 @@
 package com.tuapp.mt_guard
 
 import android.animation.ObjectAnimator
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,8 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -18,9 +21,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import java.util.Locale
 
 class AuthActivity : AppCompatActivity() {
 
+    private lateinit var authRoot: View
     private lateinit var tvTitulo: TextView
 
     private lateinit var etPin: EditText
@@ -33,12 +38,19 @@ class AuthActivity : AppCompatActivity() {
 
     private lateinit var tvOlvide: TextView
     private lateinit var fingerprintView: View
+    private lateinit var keypadContainer: View
 
     private lateinit var biometricPrompt: BiometricPrompt
     private lateinit var promptInfo: BiometricPrompt.PromptInfo
 
-    private val handler = Handler(Looper.getMainLooper())
+    private val handler = Handler(
+        Looper.getMainLooper()
+    )
+
     private var verificacionPendiente: Runnable? = null
+    private var biometriaPendiente: Runnable? = null
+
+    private var campoPinActivo: EditText? = null
 
     private var modo = Modo.LOGIN
 
@@ -51,22 +63,40 @@ class AuthActivity : AppCompatActivity() {
 
     companion object {
         private const val PREFS = "MT_GUARD_Auth"
+
         private const val KEY_PIN = "pin_hash"
         private const val KEY_PREGUNTA = "pregunta"
         private const val KEY_RESPUESTA = "respuesta_hash"
 
         private const val RETARDO_VERIFICACION_PIN = 180L
+        private const val RETARDO_BIOMETRIA = 1100L
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        /*
+         * Evita que el teclado del teléfono aparezca
+         * automáticamente al abrir AuthActivity.
+         */
+        window.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN or
+                    WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        )
+
         setContentView(R.layout.activity_auth)
 
         enlazarVistas()
+        configurarTecladoNumericoFijo()
         configurarBiometria()
         configurarEventos()
         configurarVerificacionAutomatica()
+
+        /*
+         * El contenedor recibe el foco inicialmente.
+         * Esto evita que Android abra el teclado del sistema.
+         */
+        authRoot.requestFocus()
 
         val prefs = getSharedPreferences(
             PREFS,
@@ -82,22 +112,23 @@ class AuthActivity : AppCompatActivity() {
             mostrarCrearPin()
         } else {
             mostrarLogin()
-
-            fingerprintView.postDelayed({
-                intentarBiometrico()
-            }, 400L)
+            programarBiometriaAutomatica()
         }
     }
 
     override fun onDestroy() {
-        verificacionPendiente?.let {
-            handler.removeCallbacks(it)
-        }
+        cancelarVerificacionAutomatica()
+        cancelarBiometriaAutomatica()
 
         super.onDestroy()
     }
 
+    // ═══════════════════════════════════════════════
+    // VISTAS
+    // ═══════════════════════════════════════════════
+
     private fun enlazarVistas() {
+        authRoot = findViewById(R.id.authRoot)
         tvTitulo = findViewById(R.id.tvTitulo)
 
         etPin = findViewById(R.id.etPin)
@@ -113,7 +144,307 @@ class AuthActivity : AppCompatActivity() {
         fingerprintView = findViewById(
             R.id.fingerprintView
         )
+
+        keypadContainer = findViewById(
+            R.id.keypadContainer
+        )
     }
+
+    // ═══════════════════════════════════════════════
+    // TECLADO NUMÉRICO PROPIO
+    // ═══════════════════════════════════════════════
+
+    private fun configurarTecladoNumericoFijo() {
+
+        /*
+         * Estas dos líneas son las principales:
+         * bloquean el teclado del celular para los PIN.
+         */
+        etPin.showSoftInputOnFocus = false
+        etPinConfirm.showSoftInputOnFocus = false
+
+        etPin.isFocusableInTouchMode = true
+        etPinConfirm.isFocusableInTouchMode = true
+
+        configurarCampoPin(etPin)
+        configurarCampoPin(etPinConfirm)
+
+        /*
+         * Pregunta y respuesta sí utilizan
+         * el teclado normal del teléfono.
+         */
+        configurarCampoTexto(etPregunta)
+        configurarCampoTexto(etRespuesta)
+
+        val teclasNumericas = mapOf(
+            R.id.key0 to "0",
+            R.id.key1 to "1",
+            R.id.key2 to "2",
+            R.id.key3 to "3",
+            R.id.key4 to "4",
+            R.id.key5 to "5",
+            R.id.key6 to "6",
+            R.id.key7 to "7",
+            R.id.key8 to "8",
+            R.id.key9 to "9"
+        )
+
+        teclasNumericas.forEach { (id, numero) ->
+            findViewById<View>(id).setOnClickListener { tecla ->
+                tecla.performHapticFeedback(
+                    HapticFeedbackConstants.KEYBOARD_TAP
+                )
+
+                agregarNumeroAlPin(numero)
+            }
+        }
+
+        findViewById<View>(
+            R.id.keyBackspace
+        ).setOnClickListener { tecla ->
+
+            tecla.performHapticFeedback(
+                HapticFeedbackConstants.KEYBOARD_TAP
+            )
+
+            borrarUltimoNumero()
+        }
+
+        findViewById<View>(
+            R.id.keyClear
+        ).setOnClickListener { tecla ->
+
+            tecla.performHapticFeedback(
+                HapticFeedbackConstants.KEYBOARD_TAP
+            )
+
+            limpiarCampoPinActivo()
+        }
+    }
+
+    private fun configurarCampoPin(
+        campo: EditText
+    ) {
+        campo.showSoftInputOnFocus = false
+
+        campo.setOnClickListener {
+            seleccionarCampoPin(campo)
+        }
+
+        campo.setOnFocusChangeListener { _, tieneFoco ->
+            if (tieneFoco) {
+                campo.showSoftInputOnFocus = false
+                seleccionarCampoPin(campo)
+            }
+        }
+    }
+
+    private fun configurarCampoTexto(
+        campo: EditText
+    ) {
+        campo.showSoftInputOnFocus = true
+
+        campo.setOnClickListener {
+            ocultarTecladoNumericoFijo()
+            mostrarTecladoSistema(campo)
+        }
+
+        campo.setOnFocusChangeListener { _, tieneFoco ->
+            if (tieneFoco) {
+                ocultarTecladoNumericoFijo()
+                mostrarTecladoSistema(campo)
+            }
+        }
+    }
+
+    private fun seleccionarCampoPin(
+        campo: EditText
+    ) {
+        if (modo == Modo.RECUPERAR) {
+            return
+        }
+
+        if (
+            campo.visibility != View.VISIBLE ||
+            !campo.isEnabled
+        ) {
+            return
+        }
+
+        campo.showSoftInputOnFocus = false
+        campoPinActivo = campo
+
+        keypadContainer.visibility = View.VISIBLE
+
+        if (!campo.hasFocus()) {
+            campo.requestFocus()
+        }
+
+        campo.setSelection(
+            campo.text.length
+        )
+
+        ocultarTecladoSistema(campo)
+
+        /*
+         * Refuerzo posterior porque algunos teléfonos
+         * intentan abrir el teclado después del foco.
+         */
+        campo.post {
+            ocultarTecladoSistema(campo)
+        }
+    }
+
+    private fun agregarNumeroAlPin(
+        numero: String
+    ) {
+        val campo = campoPinActivo ?: return
+
+        if (
+            campo.visibility != View.VISIBLE ||
+            !campo.isEnabled ||
+            campo.text.length >= 4
+        ) {
+            return
+        }
+
+        val seleccionActual = campo.selectionStart
+
+        val posicion = if (seleccionActual >= 0) {
+            seleccionActual.coerceIn(
+                0,
+                campo.text.length
+            )
+        } else {
+            campo.text.length
+        }
+
+        campo.text.insert(
+            posicion,
+            numero
+        )
+
+        /*
+         * Al completar el primer PIN,
+         * pasa automáticamente a confirmación.
+         */
+        if (
+            campo == etPin &&
+            campo.text.length == 4 &&
+            (
+                    modo == Modo.CREAR_PIN ||
+                            modo == Modo.NUEVO_PIN
+                    )
+        ) {
+            etPinConfirm.postDelayed(
+                {
+                    seleccionarCampoPin(
+                        etPinConfirm
+                    )
+                },
+                100L
+            )
+        }
+    }
+
+    private fun borrarUltimoNumero() {
+        var campo = campoPinActivo ?: return
+
+        /*
+         * Si la confirmación está vacía,
+         * regresa al primer campo.
+         */
+        if (
+            campo == etPinConfirm &&
+            campo.text.isEmpty() &&
+            etPin.text.isNotEmpty()
+        ) {
+            seleccionarCampoPin(etPin)
+            campo = etPin
+        }
+
+        if (campo.text.isEmpty()) {
+            return
+        }
+
+        val seleccionActual = campo.selectionStart
+
+        val posicion = if (seleccionActual > 0) {
+            seleccionActual
+        } else {
+            campo.text.length
+        }
+
+        if (posicion <= 0) {
+            return
+        }
+
+        campo.text.delete(
+            posicion - 1,
+            posicion
+        )
+    }
+
+    private fun limpiarCampoPinActivo() {
+        val campo = campoPinActivo ?: return
+
+        campo.setText("")
+        campo.requestFocus()
+        campo.setSelection(0)
+
+        ocultarTecladoSistema(campo)
+    }
+
+    private fun mostrarTecladoNumericoFijo() {
+        keypadContainer.visibility = View.VISIBLE
+    }
+
+    private fun ocultarTecladoNumericoFijo() {
+        keypadContainer.visibility = View.GONE
+        campoPinActivo = null
+    }
+
+    private fun ocultarTecladoSistema(
+        view: View
+    ) {
+        val inputMethodManager = getSystemService(
+            Context.INPUT_METHOD_SERVICE
+        ) as InputMethodManager
+
+        inputMethodManager.hideSoftInputFromWindow(
+            view.windowToken,
+            0
+        )
+    }
+
+    private fun mostrarTecladoSistema(
+        campo: EditText
+    ) {
+        campo.showSoftInputOnFocus = true
+
+        campo.postDelayed(
+            {
+                if (
+                    campo.hasFocus() &&
+                    campo.visibility == View.VISIBLE
+                ) {
+                    val inputMethodManager = getSystemService(
+                        Context.INPUT_METHOD_SERVICE
+                    ) as InputMethodManager
+
+                    inputMethodManager.showSoftInput(
+                        campo,
+                        InputMethodManager.SHOW_IMPLICIT
+                    )
+                }
+            },
+            100L
+        )
+    }
+
+    // ═══════════════════════════════════════════════
+    // EVENTOS
+    // ═══════════════════════════════════════════════
 
     private fun configurarEventos() {
         btnAccion.setOnClickListener {
@@ -126,22 +457,25 @@ class AuthActivity : AppCompatActivity() {
         }
 
         btnBiometria.setOnClickListener {
+            cancelarBiometriaAutomatica()
             intentarBiometrico()
         }
 
         fingerprintView.setOnClickListener {
+            cancelarBiometriaAutomatica()
             intentarBiometrico()
         }
 
         tvOlvide.setOnClickListener {
+            cancelarBiometriaAutomatica()
             mostrarRecuperar()
         }
     }
 
-    /*
-     * Cuando el campo alcanza cuatro números,
-     * programa automáticamente la comprobación.
-     */
+    // ═══════════════════════════════════════════════
+    // VERIFICACIÓN AUTOMÁTICA
+    // ═══════════════════════════════════════════════
+
     private fun configurarVerificacionAutomatica() {
         etPin.addTextChangedListener(
             object : TextWatcher {
@@ -152,7 +486,7 @@ class AuthActivity : AppCompatActivity() {
                     count: Int,
                     after: Int
                 ) {
-                    // No se necesita acción.
+                    // Sin acción.
                 }
 
                 override fun onTextChanged(
@@ -161,13 +495,13 @@ class AuthActivity : AppCompatActivity() {
                     before: Int,
                     count: Int
                 ) {
-                    // No se necesita acción.
+                    // Sin acción.
                 }
 
-                override fun afterTextChanged(text: Editable?) {
-                    verificacionPendiente?.let {
-                        handler.removeCallbacks(it)
-                    }
+                override fun afterTextChanged(
+                    text: Editable?
+                ) {
+                    cancelarVerificacionAutomatica()
 
                     if (
                         modo != Modo.LOGIN ||
@@ -179,7 +513,9 @@ class AuthActivity : AppCompatActivity() {
                     val tarea = Runnable {
                         if (
                             modo == Modo.LOGIN &&
-                            etPin.text.toString().length == 4
+                            etPin.text.length == 4 &&
+                            !isFinishing &&
+                            !isDestroyed
                         ) {
                             verificarPin()
                         }
@@ -197,13 +533,14 @@ class AuthActivity : AppCompatActivity() {
     }
 
     // ═══════════════════════════════════════════════
-    // MODOS DE PANTALLA
+    // MODOS
     // ═══════════════════════════════════════════════
 
     private fun mostrarCrearPin() {
         modo = Modo.CREAR_PIN
 
         cancelarVerificacionAutomatica()
+        cancelarBiometriaAutomatica()
 
         tvTitulo.text = "Crea tu PIN de seguridad"
 
@@ -218,17 +555,25 @@ class AuthActivity : AppCompatActivity() {
         btnAccion.visibility = View.VISIBLE
         tvOlvide.visibility = View.GONE
 
+        etPin.isEnabled = true
+        etPinConfirm.isEnabled = true
         etPregunta.isEnabled = true
+        etRespuesta.isEnabled = true
 
         btnAccion.text = "CREAR PIN"
 
         etPin.hint = "PIN de 4 dígitos"
         etPinConfirm.hint = "Confirmar PIN"
-        etPregunta.hint = "Ejemplo: nombre de tu mascota"
+        etPregunta.hint =
+            "Ejemplo: nombre de tu mascota"
         etRespuesta.hint = "Tu respuesta"
 
         limpiarCampos()
         limpiarErrores()
+
+        ocultarTecladoSistema(authRoot)
+        mostrarTecladoNumericoFijo()
+        seleccionarCampoPin(etPin)
     }
 
     private fun mostrarLogin() {
@@ -236,7 +581,8 @@ class AuthActivity : AppCompatActivity() {
 
         cancelarVerificacionAutomatica()
 
-        tvTitulo.text = "Confirma tu identidad para continuar"
+        tvTitulo.text =
+            "Confirma tu identidad para continuar"
 
         val disponible = biometriaDisponible()
 
@@ -257,26 +603,27 @@ class AuthActivity : AppCompatActivity() {
         etPregunta.visibility = View.GONE
         etRespuesta.visibility = View.GONE
 
-        /*
-         * Ya no se necesita presionar este botón.
-         * El PIN se comprueba al completar 4 dígitos.
-         */
         btnAccion.visibility = View.GONE
-
         tvOlvide.visibility = View.VISIBLE
 
+        etPin.isEnabled = true
         etPin.hint = "PIN de 4 dígitos"
         etPin.setText("")
 
         limpiarErrores()
 
-        etPin.requestFocus()
+        ocultarTecladoSistema(authRoot)
+        mostrarTecladoNumericoFijo()
+        seleccionarCampoPin(etPin)
     }
 
     private fun mostrarRecuperar() {
         modo = Modo.RECUPERAR
 
         cancelarVerificacionAutomatica()
+        cancelarBiometriaAutomatica()
+
+        ocultarTecladoNumericoFijo()
 
         val prefs = getSharedPreferences(
             PREFS,
@@ -307,16 +654,25 @@ class AuthActivity : AppCompatActivity() {
         etPregunta.setText(pregunta)
         etPregunta.isEnabled = false
 
+        etRespuesta.isEnabled = true
         etRespuesta.setText("")
         etRespuesta.hint = "Escribe tu respuesta"
 
         limpiarErrores()
+
+        etRespuesta.requestFocus()
+        mostrarTecladoSistema(etRespuesta)
     }
 
     private fun mostrarNuevoPin() {
         modo = Modo.NUEVO_PIN
 
         cancelarVerificacionAutomatica()
+        cancelarBiometriaAutomatica()
+
+        ocultarTecladoSistema(
+            currentFocus ?: authRoot
+        )
 
         tvTitulo.text = "Crea un nuevo PIN"
 
@@ -333,6 +689,9 @@ class AuthActivity : AppCompatActivity() {
 
         btnAccion.text = "GUARDAR NUEVO PIN"
 
+        etPin.isEnabled = true
+        etPinConfirm.isEnabled = true
+
         etPin.setText("")
         etPinConfirm.setText("")
 
@@ -340,6 +699,9 @@ class AuthActivity : AppCompatActivity() {
         etPinConfirm.hint = "Confirmar nuevo PIN"
 
         limpiarErrores()
+
+        mostrarTecladoNumericoFijo()
+        seleccionarCampoPin(etPin)
     }
 
     // ═══════════════════════════════════════════════
@@ -348,9 +710,14 @@ class AuthActivity : AppCompatActivity() {
 
     private fun crearPin() {
         val pin = etPin.text.toString().trim()
-        val pinConfirm = etPinConfirm.text.toString().trim()
-        val pregunta = etPregunta.text.toString().trim()
-        val respuesta = etRespuesta.text.toString().trim()
+        val pinConfirm =
+            etPinConfirm.text.toString().trim()
+
+        val pregunta =
+            etPregunta.text.toString().trim()
+
+        val respuesta =
+            etRespuesta.text.toString().trim()
 
         if (pin.length != 4) {
             mostrarErrorCampos(
@@ -415,7 +782,7 @@ class AuthActivity : AppCompatActivity() {
             .putString(
                 KEY_RESPUESTA,
                 respuesta
-                    .lowercase()
+                    .lowercase(Locale.ROOT)
                     .hashCode()
                     .toString()
             )
@@ -436,6 +803,7 @@ class AuthActivity : AppCompatActivity() {
 
     private fun verificarPin() {
         cancelarVerificacionAutomatica()
+        cancelarBiometriaAutomatica()
 
         val pin = etPin.text.toString().trim()
 
@@ -458,7 +826,10 @@ class AuthActivity : AppCompatActivity() {
             ""
         )
 
-        if (pin.hashCode().toString() == pinGuardado) {
+        if (
+            pin.hashCode().toString() ==
+            pinGuardado
+        ) {
             etPin.isEnabled = false
             entrarApp()
         } else {
@@ -475,7 +846,8 @@ class AuthActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════
 
     private fun verificarRespuesta() {
-        val respuesta = etRespuesta.text.toString().trim()
+        val respuesta =
+            etRespuesta.text.toString().trim()
 
         if (respuesta.isEmpty()) {
             mostrarErrorCampos(
@@ -498,7 +870,7 @@ class AuthActivity : AppCompatActivity() {
 
         if (
             respuesta
-                .lowercase()
+                .lowercase(Locale.ROOT)
                 .hashCode()
                 .toString() == respuestaGuardada
         ) {
@@ -520,7 +892,9 @@ class AuthActivity : AppCompatActivity() {
 
     private fun crearNuevoPin() {
         val pin = etPin.text.toString().trim()
-        val pinConfirm = etPinConfirm.text.toString().trim()
+
+        val pinConfirm =
+            etPinConfirm.text.toString().trim()
 
         if (pin.length != 4) {
             mostrarErrorCampos(
@@ -576,17 +950,22 @@ class AuthActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════
 
     private fun configurarBiometria() {
-        val executor = ContextCompat.getMainExecutor(this)
+        val executor =
+            ContextCompat.getMainExecutor(this)
 
         biometricPrompt = BiometricPrompt(
             this,
             executor,
-            object : BiometricPrompt.AuthenticationCallback() {
+            object :
+                BiometricPrompt.AuthenticationCallback() {
 
                 override fun onAuthenticationSucceeded(
-                    result: BiometricPrompt.AuthenticationResult
+                    result:
+                    BiometricPrompt.AuthenticationResult
                 ) {
                     super.onAuthenticationSucceeded(result)
+
+                    cancelarBiometriaAutomatica()
                     entrarApp()
                 }
 
@@ -629,34 +1008,72 @@ class AuthActivity : AppCompatActivity() {
             }
         )
 
-        promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("MT GUARD")
-            .setSubtitle("Confirma tu identidad")
-            .setDescription(
-                "Usa tu huella digital para acceder al sistema"
-            )
-            .setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                        BiometricManager.Authenticators.BIOMETRIC_WEAK
-            )
-            .setNegativeButtonText("Usar PIN")
-            .build()
+        promptInfo =
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle("MT GUARD")
+                .setSubtitle("Confirma tu identidad")
+                .setDescription(
+                    "Usa tu huella digital para acceder al sistema"
+                )
+                .setAllowedAuthenticators(
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                            BiometricManager.Authenticators.BIOMETRIC_WEAK
+                )
+                .setNegativeButtonText("Usar PIN")
+                .build()
     }
 
     private fun biometriaDisponible(): Boolean {
-        val biometricManager = BiometricManager.from(this)
+        val biometricManager =
+            BiometricManager.from(this)
 
-        val resultado = biometricManager.canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                    BiometricManager.Authenticators.BIOMETRIC_WEAK
-        )
+        val resultado =
+            biometricManager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                        BiometricManager.Authenticators.BIOMETRIC_WEAK
+            )
 
         return resultado ==
                 BiometricManager.BIOMETRIC_SUCCESS
     }
 
+    private fun programarBiometriaAutomatica() {
+        cancelarBiometriaAutomatica()
+
+        if (!biometriaDisponible()) {
+            return
+        }
+
+        val tarea = Runnable {
+            if (
+                modo == Modo.LOGIN &&
+                !isFinishing &&
+                !isDestroyed
+            ) {
+                intentarBiometrico()
+            }
+        }
+
+        biometriaPendiente = tarea
+
+        handler.postDelayed(
+            tarea,
+            RETARDO_BIOMETRIA
+        )
+    }
+
+    private fun cancelarBiometriaAutomatica() {
+        biometriaPendiente?.let {
+            handler.removeCallbacks(it)
+        }
+
+        biometriaPendiente = null
+    }
+
     private fun intentarBiometrico() {
-        if (modo != Modo.LOGIN) return
+        if (modo != Modo.LOGIN) {
+            return
+        }
 
         if (!biometriaDisponible()) {
             Toast.makeText(
@@ -668,12 +1085,16 @@ class AuthActivity : AppCompatActivity() {
             return
         }
 
-        biometricPrompt.authenticate(promptInfo)
+        biometricPrompt.authenticate(
+            promptInfo
+        )
     }
 
     private fun mostrarErrorBiometrico() {
         animarSacudida(fingerprintView)
-        ejecutarRespuestaTactil(fingerprintView)
+        ejecutarRespuestaTactil(
+            fingerprintView
+        )
     }
 
     // ═══════════════════════════════════════════════
@@ -685,7 +1106,9 @@ class AuthActivity : AppCompatActivity() {
         limpiar: Boolean,
         vararg campos: EditText
     ) {
-        if (campos.isEmpty()) return
+        if (campos.isEmpty()) {
+            return
+        }
 
         campos.forEach { campo ->
             campo.setBackgroundResource(
@@ -693,28 +1116,47 @@ class AuthActivity : AppCompatActivity() {
             )
 
             campo.error = mensaje
-
             animarSacudida(campo)
 
             if (limpiar) {
                 campo.setText("")
             }
 
-            campo.postDelayed({
-                campo.error = null
+            campo.postDelayed(
+                {
+                    campo.error = null
 
-                campo.setBackgroundResource(
-                    R.drawable.input_bg
-                )
-            }, 900L)
+                    campo.setBackgroundResource(
+                        R.drawable.input_bg
+                    )
+                },
+                900L
+            )
         }
 
-        ejecutarRespuestaTactil(campos.first())
+        ejecutarRespuestaTactil(
+            campos.first()
+        )
 
-        campos.first().requestFocus()
+        val primerCampo = campos.first()
+
+        if (
+            primerCampo == etPin ||
+            primerCampo == etPinConfirm
+        ) {
+            seleccionarCampoPin(
+                primerCampo
+            )
+        } else {
+            ocultarTecladoNumericoFijo()
+            primerCampo.requestFocus()
+            mostrarTecladoSistema(primerCampo)
+        }
     }
 
-    private fun animarSacudida(view: View) {
+    private fun animarSacudida(
+        view: View
+    ) {
         ObjectAnimator.ofFloat(
             view,
             View.TRANSLATION_X,
@@ -732,9 +1174,12 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
-    private fun ejecutarRespuestaTactil(view: View) {
+    private fun ejecutarRespuestaTactil(
+        view: View
+    ) {
         val tipo = if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+            Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.R
         ) {
             HapticFeedbackConstants.REJECT
         } else {
@@ -754,6 +1199,7 @@ class AuthActivity : AppCompatActivity() {
 
         campos.forEach { campo ->
             campo.error = null
+
             campo.setBackgroundResource(
                 R.drawable.input_bg
             )
@@ -776,11 +1222,18 @@ class AuthActivity : AppCompatActivity() {
     }
 
     // ═══════════════════════════════════════════════
-    // ENTRAR A LA APLICACIÓN
+    // ENTRAR
     // ═══════════════════════════════════════════════
 
     private fun entrarApp() {
         cancelarVerificacionAutomatica()
+        cancelarBiometriaAutomatica()
+
+        ocultarTecladoNumericoFijo()
+
+        ocultarTecladoSistema(
+            currentFocus ?: authRoot
+        )
 
         val intent = Intent(
             this,
@@ -796,5 +1249,4 @@ class AuthActivity : AppCompatActivity() {
 
         finish()
     }
-
 }

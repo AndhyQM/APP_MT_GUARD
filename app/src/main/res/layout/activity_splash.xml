@@ -2,6 +2,7 @@
 
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_splash"
@@ -35,18 +36,23 @@
         android:paddingStart="32dp"
         android:paddingEnd="32dp">
 
-        <ImageView
-            android:id="@+id/ivLogo"
-            android:layout_width="158dp"
-            android:layout_height="158dp"
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieSplashLogo"
+            android:layout_width="280dp"
+            android:layout_height="180dp"
+            android:background="@android:color/transparent"
             android:contentDescription="@string/app_name"
-            android:src="@drawable/mt_guard_logo" />
+            android:scaleType="fitCenter"
+            app:lottie_autoPlay="false"
+            app:lottie_fileName="splash_logo.json"
+            app:lottie_loop="false"
+            app:lottie_speed="1" />
 
         <TextView
             android:id="@+id/tvBrand"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="14dp"
             android:fontFamily="sans-serif-medium"
             android:letterSpacing="0.12"
             android:text="MT GUARD"

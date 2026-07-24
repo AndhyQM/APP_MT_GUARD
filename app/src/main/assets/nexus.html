@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  margin: 0;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.nexus-logo-watch {
+  width: 199px;
+  height: 199px;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #061522 0%, #071827 45%, #0B2032 100%);
+  border: 6px solid rgba(46,168,255,0.18);
+  box-shadow:
+    0 0 22px rgba(46,168,255,0.25),
+    inset 0 0 28px rgba(46,168,255,0.14);
+}
+
+.nexus-logo-watch svg {
+  width: 118%;
+  height: 118%;
+  position: absolute;
+  top: -22px;
+  left: -18px;
+}
+</style>
+</head>
+<body>
+
+<div class="nexus-logo-watch">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+    <defs>
+      <radialGradient id="core-animated">
+        <stop offset="0%" style="stop-color:#FFFFFF">
+          <animate attributeName="stop-opacity" values="1;0.7;1" dur="2s" repeatCount="indefinite"/>
+        </stop>
+        <stop offset="30%" style="stop-color:#EF9F27"/>
+        <stop offset="60%" style="stop-color:#E24B4A"/>
+        <stop offset="100%" style="stop-color:#378ADD;stop-opacity:0"/>
+      </radialGradient>
+
+      <linearGradient id="text-gradient">
+        <stop offset="0%" style="stop-color:#FFFFFF"/>
+        <stop offset="20%" style="stop-color:#EF9F27"/>
+        <stop offset="50%" style="stop-color:#E24B4A"/>
+        <stop offset="80%" style="stop-color:#378ADD"/>
+        <stop offset="100%" style="stop-color:#0C447C"/>
+      </linearGradient>
+    </defs>
+
+    <circle cx="400" cy="320" r="233" fill="none" stroke="#378ADD" stroke-width="2" opacity="0.3"/>
+    <circle cx="400" cy="320" r="144" fill="none" stroke="#EF9F27" stroke-width="2" opacity="0.35"/>
+
+    <path d="M 400,130 L 490,200 L 490,440 L 400,510 L 310,440 L 310,200 Z" 
+          fill="rgba(55,138,221,0.1)" 
+          stroke="#378ADD" 
+          stroke-width="6" 
+          opacity="1"/>
+
+    <g>
+      <animateTransform
+        attributeName="transform"
+        type="rotate"
+        from="0 400 320"
+        to="360 400 320"
+        dur="60s"
+        calcMode="linear"
+        repeatCount="indefinite"
+      />
+
+      <g opacity="0.58">
+        <line x1="400" y1="320" x2="400" y2="210" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="477.8" y2="242.2" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="510" y2="320" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="477.8" y2="397.8" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="400" y2="430" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="322.2" y2="397.8" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="290" y2="320" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+        <line x1="400" y1="320" x2="322.2" y2="242.2" stroke="#EF9F27" stroke-width="6" stroke-linecap="round"/>
+      </g>
+
+      <circle cx="400" cy="210" r="13" fill="#E24B4A" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="477.8" cy="242.2" r="13" fill="#EF9F27" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="510" cy="320" r="13" fill="#E24B4A" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="477.8" cy="397.8" r="13" fill="#EF9F27" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="400" cy="430" r="13" fill="#E24B4A" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="322.2" cy="397.8" r="13" fill="#EF9F27" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="290" cy="320" r="13" fill="#E24B4A" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="322.2" cy="242.2" r="13" fill="#EF9F27" stroke="#FFFFFF" stroke-width="3"/>
+    </g>
+
+    <circle cx="400" cy="320" r="75" fill="url(#core-animated)">
+      <animate attributeName="r" values="75;80;75" dur="2s" repeatCount="indefinite"/>
+    </circle>
+
+    <circle cx="400" cy="320" r="55" fill="#E24B4A">
+      <animate attributeName="opacity" values="0.95;1;0.95" dur="2s" repeatCount="indefinite"/>
+    </circle>
+
+    <circle cx="400" cy="320" r="35" fill="#FFFFFF">
+      <animate attributeName="r" values="35;38;35" dur="2s" repeatCount="indefinite"/>
+    </circle>
+
+    <circle cx="400" cy="320" r="20" fill="#EF9F27">
+      <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <text x="400" y="610" text-anchor="middle" fill="url(#text-gradient)" 
+          font-size="140" font-weight="900" letter-spacing="10" 
+          font-family="Arial Black, sans-serif">
+      NEXUS
+    </text>
+
+    <line x1="220" y1="660" x2="580" y2="660" stroke="#EF9F27" stroke-width="4" opacity="0.7"/>
+
+    <text x="400" y="700" text-anchor="middle" fill="#378ADD" 
+          font-size="24" font-weight="600" letter-spacing="8" 
+          font-family="Arial, sans-serif">
+      INGENIERÍA MECATRÓNICA
+    </text>
+
+    <line x1="260" y1="715" x2="540" y2="715" stroke="#378ADD" stroke-width="2" opacity="0.5"/>
+  </svg>
+</div>
+
+</body>
+</html>
