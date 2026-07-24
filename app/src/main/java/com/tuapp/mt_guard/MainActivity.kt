@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
@@ -44,10 +46,11 @@ class MainActivity : AppCompatActivity() {
     private var saliendoAlEscaner = false
     private var viajeSeguroActivo = false
 
-    /*
-     * Modo demo: llega como extra desde ScannerActivity.
-     * Permite probar animaciones sin el módulo ESP32.
-     */
+    // Arranque tipo llave de contacto
+    private val arranqueHandler = Handler(Looper.getMainLooper())
+    private var arranqueActivo = false
+    private val ARRANQUE_INTERVALO_MS = 350L
+
     private val demoMode: Boolean by lazy {
         intent.getBooleanExtra("DEMO_MODE", false) ||
                 ScannerActivity.DEMO_MODE
@@ -75,49 +78,17 @@ class MainActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════
 
     private fun enlazarVistas() {
-        btnBack = findViewById(
-            R.id.btnBack
-        )
-
-        btnConfig = findViewById(
-            R.id.btnConfig
-        )
-
-        viewBleDot = findViewById(
-            R.id.viewBleDot
-        )
-
-        tvBleStatus = findViewById(
-            R.id.tvBleStatus
-        )
-
-        tvDeviceName = findViewById(
-            R.id.tvDeviceName
-        )
-
-        tvDeviceMac = findViewById(
-            R.id.tvDeviceMac
-        )
-
-        btnDesbloquear = findViewById(
-            R.id.btnDesbloquear
-        )
-
-        btnArrancar = findViewById(
-            R.id.btnArrancar
-        )
-
-        btnViajeSeguro = findViewById(
-            R.id.btnViajeSeguro
-        )
-
-        lottieVehicle = findViewById(
-            R.id.lottieVehicle
-        )
-
-        lottieShield = findViewById(
-            R.id.lottieShield
-        )
+        btnBack = findViewById(R.id.btnBack)
+        btnConfig = findViewById(R.id.btnConfig)
+        viewBleDot = findViewById(R.id.viewBleDot)
+        tvBleStatus = findViewById(R.id.tvBleStatus)
+        tvDeviceName = findViewById(R.id.tvDeviceName)
+        tvDeviceMac = findViewById(R.id.tvDeviceMac)
+        btnDesbloquear = findViewById(R.id.btnDesbloquear)
+        btnArrancar = findViewById(R.id.btnArrancar)
+        btnViajeSeguro = findViewById(R.id.btnViajeSeguro)
+        lottieVehicle = findViewById(R.id.lottieVehicle)
+        lottieShield = findViewById(R.id.lottieShield)
     }
 
     // ═══════════════════════════════════════════════
@@ -125,25 +96,13 @@ class MainActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════
 
     private fun configurarAnimaciones() {
-        /*
-         * El vehículo arranca congelado en el primer
-         * frame. Solo se anima al iniciar viaje seguro.
-         */
         lottieVehicle.repeatCount = 0
         lottieVehicle.progress = 0f
 
-        /*
-         * El escudo queda invisible y quieto hasta
-         * que el viaje seguro se active.
-         */
         lottieShield.repeatCount = 0
         lottieShield.progress = 0f
         lottieShield.alpha = 0f
 
-        /*
-         * La composición se carga en background.
-         * Los KeyPath solo resuelven después de esto.
-         */
         lottieVehicle.addLottieOnCompositionLoadedListener {
             pintarEdificios()
             pintarLineaPiso()
@@ -156,10 +115,6 @@ class MainActivity : AppCompatActivity() {
             PorterDuff.Mode.SRC_ATOP
         )
 
-        /*
-         * "buldings" está mal escrito en el JSON original.
-         * Hay que respetarlo tal cual o el KeyPath no resuelve.
-         */
         lottieVehicle.addValueCallback(
             KeyPath("Pre-comp 2", "Layer 1/buldings.ai", "**"),
             LottieProperty.COLOR_FILTER,
@@ -168,11 +123,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun pintarLineaPiso() {
-        /*
-         * Shape Layer 1 sí es vector real, acepta
-         * STROKE_COLOR directo. Venía en #242E44,
-         * invisible sobre fondo oscuro.
-         */
         lottieVehicle.addValueCallback(
             KeyPath("Shape Layer 1", "Shape 1", "Stroke 1"),
             LottieProperty.STROKE_COLOR,
@@ -183,16 +133,11 @@ class MainActivity : AppCompatActivity() {
     private fun reproducirViajeSeguro() {
         viajeSeguroActivo = true
 
-        // El carro sí queda en bucle infinito
         lottieVehicle.cancelAnimation()
         lottieVehicle.repeatCount = LottieDrawable.INFINITE
         lottieVehicle.progress = 0f
         lottieVehicle.playAnimation()
 
-        /*
-         * El escudo se reproduce una sola vez
-         * y se queda congelado en el último frame.
-         */
         lottieShield.cancelAnimation()
         lottieShield.repeatCount = 0
         lottieShield.progress = 0f
@@ -203,20 +148,10 @@ class MainActivity : AppCompatActivity() {
             .setDuration(400)
             .start()
 
-        btnViajeSeguro.text =
-            "VIAJE SEGURO ACTIVO"
-
-        /*
-         * Una vez activado ya no se puede volver
-         * a tocar desde la app.
-         */
+        btnViajeSeguro.text = "VIAJE SEGURO ACTIVO"
         btnViajeSeguro.isEnabled = false
     }
 
-    /*
-     * No se usa desde el botón. Queda disponible para
-     * cuando el módulo reporte que el viaje terminó.
-     */
     private fun detenerViajeSeguro() {
         viajeSeguroActivo = false
 
@@ -233,9 +168,7 @@ class MainActivity : AppCompatActivity() {
         lottieVehicle.repeatCount = 0
         lottieVehicle.progress = 0f
 
-        btnViajeSeguro.text =
-            "INICIAR VIAJE SEGURO"
-
+        btnViajeSeguro.text = "INICIAR VIAJE SEGURO"
         btnViajeSeguro.isEnabled = listoParaComandos()
     }
 
@@ -251,10 +184,7 @@ class MainActivity : AppCompatActivity() {
         tvBleStatus.text = "Conectado (demo)"
 
         tvBleStatus.setTextColor(
-            ContextCompat.getColor(
-                this,
-                R.color.status_ok
-            )
+            ContextCompat.getColor(this, R.color.status_ok)
         )
 
         habilitarControles(true)
@@ -270,32 +200,19 @@ class MainActivity : AppCompatActivity() {
 
             onConnectionChange = { connected ->
                 runOnUiThread {
-                    if (demoMode) {
-                        return@runOnUiThread
-                    }
-
-                    actualizarConexion(
-                        connected
-                    )
+                    if (demoMode) return@runOnUiThread
+                    actualizarConexion(connected)
                 }
             },
 
             onAuthenticated = {
                 runOnUiThread {
-                    habilitarControles(
-                        true
-                    )
+                    // Ya no se usa para habilitar controles automáticamente
+                    // La autenticación ahora se hace al presionar Viaje Seguro
                 }
             },
 
             onData = { data ->
-                /*
-                 * Los datos recibidos no se muestran
-                 * en el panel principal.
-                 *
-                 * Después se mostrarán dentro de:
-                 * Configuración → Beacon.
-                 */
                 android.util.Log.d(
                     "MainActivity",
                     "Datos MT Guard: $data"
@@ -305,9 +222,7 @@ class MainActivity : AppCompatActivity() {
             onError = { message ->
                 runOnUiThread {
                     Toast.makeText(
-                        this,
-                        message,
-                        Toast.LENGTH_LONG
+                        this, message, Toast.LENGTH_LONG
                     ).show()
                 }
             }
@@ -318,6 +233,7 @@ class MainActivity : AppCompatActivity() {
     // BOTONES
     // ═══════════════════════════════════════════════
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun configurarBotones() {
         btnBack.setOnClickListener {
             volverAlEscaner()
@@ -325,10 +241,7 @@ class MainActivity : AppCompatActivity() {
 
         btnConfig.setOnClickListener {
             startActivity(
-                Intent(
-                    this,
-                    ConfigPinActivity::class.java
-                )
+                Intent(this, ConfigPinActivity::class.java)
             )
 
             overridePendingTransition(
@@ -354,29 +267,57 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
-        btnArrancar.setOnClickListener {
-            if (!listoParaComandos()) {
-                mostrarMensajeNoConectado()
-                return@setOnClickListener
-            }
+        // ═══ ARRANCAR — tipo llave de contacto ═══
+        btnArrancar.setOnTouchListener { view, event ->
+            if (!view.isEnabled) return@setOnTouchListener false
 
-            if (!demoMode) {
-                bleManager.sendArrancar()
-            }
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    if (!listoParaComandos()) {
+                        mostrarMensajeNoConectado()
+                        return@setOnTouchListener true
+                    }
 
-            Toast.makeText(
-                this,
-                "Comando de arranque enviado",
-                Toast.LENGTH_SHORT
-            ).show()
+                    view.animate()
+                        .scaleX(0.96f)
+                        .scaleY(0.96f)
+                        .setDuration(90)
+                        .start()
+
+                    view.performHapticFeedback(
+                        HapticFeedbackConstants.VIRTUAL_KEY
+                    )
+
+                    (view as Button).setBackgroundResource(
+                        R.drawable.btn_arranque_active
+                    )
+
+                    iniciarArranque()
+                    true
+                }
+
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_CANCEL -> {
+                    view.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(120)
+                        .start()
+
+                    (view as Button).setBackgroundResource(
+                        R.drawable.panel_button_green
+                    )
+
+                    detenerArranque()
+                    true
+                }
+
+                else -> false
+            }
         }
 
+        // ═══ VIAJE SEGURO — autentica y habilita los demás ═══
         btnViajeSeguro.setOnClickListener {
-            /*
-             * El viaje seguro es de una sola vía:
-             * el chofer lo activa y ya no se apaga
-             * desde este botón.
-             */
             if (viajeSeguroActivo) {
                 return@setOnClickListener
             }
@@ -386,11 +327,19 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Autenticar enviando "1" al ESP32
+            if (!demoMode) {
+                bleManager.authenticate()
+            }
+
             reproducirViajeSeguro()
 
             if (!demoMode) {
                 bleManager.sendIniciarViajeSeguro()
             }
+
+            // Ahora sí habilitar arranque y desbloqueo
+            habilitarControles(true)
 
             Toast.makeText(
                 this,
@@ -399,21 +348,61 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
-        // Retroalimentación táctil en los tres botones
+        // Solo desbloquear — arrancar tiene su propio touch
         aplicarEfectoPresion(btnDesbloquear)
-        aplicarEfectoPresion(btnArrancar)
         aplicarEfectoPresion(btnViajeSeguro)
     }
 
-    /*
-     * Encoge el botón mientras se mantiene presionado
-     * y dispara una vibración corta al tocarlo.
-     */
+    // ═══════════════════════════════════════════════
+    // ARRANQUE TIPO LLAVE DE CONTACTO
+    // ═══════════════════════════════════════════════
+
+    private fun iniciarArranque() {
+        if (arranqueActivo) return
+        arranqueActivo = true
+
+        btnArrancar.text = "ARRANCANDO..."
+
+        Toast.makeText(
+            this,
+            "Mantenga presionado para arrancar",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        enviarComandoArranque()
+    }
+
+    private fun enviarComandoArranque() {
+        if (!arranqueActivo) return
+
+        if (!demoMode) {
+            bleManager.sendArrancar()
+        }
+
+        arranqueHandler.postDelayed({
+            enviarComandoArranque()
+        }, ARRANQUE_INTERVALO_MS)
+    }
+
+    private fun detenerArranque() {
+        if (!arranqueActivo) return
+
+        arranqueActivo = false
+        arranqueHandler.removeCallbacksAndMessages(null)
+
+        btnArrancar.text = "ARRANCAR VEHÍCULO"
+
+        if (!demoMode) {
+            arranqueHandler.postDelayed({
+                bleManager.sendDetenerArranque()
+            }, 150L)
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun aplicarEfectoPresion(boton: View) {
         boton.setOnTouchListener { view, event ->
             when (event.action) {
-
                 MotionEvent.ACTION_DOWN -> {
                     if (view.isEnabled) {
                         view.animate()
@@ -438,28 +427,19 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            /*
-             * false para que el OnClickListener
-             * siga funcionando normal.
-             */
             false
         }
     }
 
     private fun listoParaComandos(): Boolean {
-        if (demoMode) {
-            return true
-        }
-
-        return bleManager.isConnected &&
-                bleManager.isAuthenticated
+        if (demoMode) return true
+        return bleManager.isConnected
     }
 
     private fun configurarBotonAtrasDelSistema() {
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
-
                 override fun handleOnBackPressed() {
                     volverAlEscaner()
                 }
@@ -480,25 +460,15 @@ class MainActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════
 
     private fun mostrarDispositivo() {
-        val rawName =
-            intent.getStringExtra(
-                "DEVICE_NAME"
-            )
-                ?: bleManager.connectedDeviceName
-                ?: "MT GUARD"
+        val rawName = intent.getStringExtra("DEVICE_NAME")
+            ?: bleManager.connectedDeviceName
+            ?: "MT GUARD"
 
-        val deviceAddress =
-            intent.getStringExtra(
-                "DEVICE_ADDRESS"
-            )
-                ?: bleManager.connectedDeviceAddress
-                ?: "Dirección no disponible"
+        val deviceAddress = intent.getStringExtra("DEVICE_ADDRESS")
+            ?: bleManager.connectedDeviceAddress
+            ?: "Dirección no disponible"
 
-        tvDeviceName.text = crearNombreVisual(
-            rawName,
-            deviceAddress
-        )
-
+        tvDeviceName.text = crearNombreVisual(rawName, deviceAddress)
         tvDeviceMac.text = deviceAddress
     }
 
@@ -506,12 +476,7 @@ class MainActivity : AppCompatActivity() {
         rawName: String,
         address: String
     ): String {
-        if (
-            !rawName.trim().equals(
-                "MT GUARD",
-                ignoreCase = true
-            )
-        ) {
+        if (!rawName.trim().equals("MT GUARD", ignoreCase = true)) {
             return rawName
         }
 
@@ -519,15 +484,13 @@ class MainActivity : AppCompatActivity() {
             .replace(":", "")
             .replace("-", "")
 
-        val suffix =
-            if (
-                address.contains(":") &&
-                cleanAddress.length >= 4
-            ) {
-                cleanAddress.takeLast(4)
-            } else {
-                "001"
-            }
+        val suffix = if (
+            address.contains(":") && cleanAddress.length >= 4
+        ) {
+            cleanAddress.takeLast(4)
+        } else {
+            "001"
+        }
 
         return "MTGUARD-$suffix"
     }
@@ -536,68 +499,44 @@ class MainActivity : AppCompatActivity() {
     // ESTADO DE CONEXIÓN
     // ═══════════════════════════════════════════════
 
-    private fun actualizarConexion(
-        connected: Boolean
-    ) {
+    private fun actualizarConexion(connected: Boolean) {
         if (connected) {
             viewBleDot.setBackgroundResource(
                 R.drawable.status_dot_connected
             )
-
-            tvBleStatus.text =
-                "Conectado"
-
+            tvBleStatus.text = "Conectado"
             tvBleStatus.setTextColor(
-                ContextCompat.getColor(
-                    this,
-                    R.color.status_ok
-                )
+                ContextCompat.getColor(this, R.color.status_ok)
             )
         } else {
             viewBleDot.setBackgroundResource(
                 R.drawable.status_dot_disconnected
             )
-
-            tvBleStatus.text =
-                "Desconectado"
-
+            tvBleStatus.text = "Desconectado"
             tvBleStatus.setTextColor(
-                ContextCompat.getColor(
-                    this,
-                    R.color.status_danger
-                )
+                ContextCompat.getColor(this, R.color.status_danger)
             )
         }
 
-        habilitarControles(
-            connected &&
-                    bleManager.isAuthenticated
-        )
+        habilitarControles(connected)
     }
 
-    private fun habilitarControles(
-        enabled: Boolean
-    ) {
-        btnDesbloquear.isEnabled = enabled
-        btnArrancar.isEnabled = enabled
+    private fun habilitarControles(enabled: Boolean) {
+        // Viaje Seguro se habilita con la conexión (si no está ya activo)
+        btnViajeSeguro.isEnabled = enabled && !viajeSeguroActivo
 
-        /*
-         * El viaje seguro no se rehabilita si ya
-         * está activo, ni siquiera al volver de
-         * otra pantalla.
-         */
-        btnViajeSeguro.isEnabled =
-            enabled && !viajeSeguroActivo
+        // Arrancar y Desbloquear SOLO si viaje seguro ya está activo
+        btnDesbloquear.isEnabled = enabled && viajeSeguroActivo
+        btnArrancar.isEnabled = enabled && viajeSeguroActivo
 
-        val alpha = if (enabled) {
-            1f
-        } else {
-            0.45f
-        }
+        btnViajeSeguro.alpha =
+            if (btnViajeSeguro.isEnabled) 1f else 0.45f
 
-        btnDesbloquear.alpha = alpha
-        btnArrancar.alpha = alpha
-        btnViajeSeguro.alpha = alpha
+        btnDesbloquear.alpha =
+            if (btnDesbloquear.isEnabled) 1f else 0.45f
+
+        btnArrancar.alpha =
+            if (btnArrancar.isEnabled) 1f else 0.45f
     }
 
     // ═══════════════════════════════════════════════
@@ -605,20 +544,16 @@ class MainActivity : AppCompatActivity() {
     // ═══════════════════════════════════════════════
 
     private fun volverAlEscaner() {
-        if (saliendoAlEscaner) {
-            return
-        }
-
+        if (saliendoAlEscaner) return
         saliendoAlEscaner = true
+
+        detenerArranque()
 
         if (!demoMode) {
             bleManager.disconnect()
         }
 
-        val intent = Intent(
-            this,
-            ScannerActivity::class.java
-        )
+        val intent = Intent(this, ScannerActivity::class.java)
 
         intent.flags =
             Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -646,24 +581,12 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        actualizarConexion(
-            bleManager.isConnected
-        )
-
-        habilitarControles(
-            bleManager.isConnected &&
-                    bleManager.isAuthenticated
-        )
+        actualizarConexion(bleManager.isConnected)
     }
 
     override fun onDestroy() {
-        /*
-         * No desconectamos al abrir configuración
-         * ni durante un cambio de orientación.
-         *
-         * La desconexión se realiza explícitamente
-         * cuando el usuario regresa al escáner.
-         */
+        arranqueHandler.removeCallbacksAndMessages(null)
+        arranqueActivo = false
         super.onDestroy()
     }
 }

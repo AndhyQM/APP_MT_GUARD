@@ -1,5 +1,6 @@
 package com.tuapp.mt_guard
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -25,24 +26,18 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun configurarOpciones() {
-        val optionBeacon = findViewById<View>(
-            R.id.optionBeacon
-        )
-
-        val optionProfile = findViewById<View>(
-            R.id.optionProfile
-        )
-
-        val optionModule = findViewById<View>(
-            R.id.optionModule
-        )
+        val optionBeacon = findViewById<View>(R.id.optionBeacon)
+        val optionProfile = findViewById<View>(R.id.optionProfile)
+        val optionModule = findViewById<View>(R.id.optionModule)
 
         optionBeacon.setOnClickListener {
-            Toast.makeText(
-                this,
-                "Configuración Beacon: siguiente etapa",
-                Toast.LENGTH_SHORT
-            ).show()
+            startActivity(
+                Intent(this, ConfigBeaconActivity::class.java)
+            )
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
         }
 
         optionProfile.setOnClickListener {

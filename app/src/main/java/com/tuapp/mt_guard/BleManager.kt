@@ -53,11 +53,6 @@ class BleManager(
             "00002902-0000-1000-8000-00805f9b34fb"
         )
 
-        /*
-         * Estos valores son compartidos entre ScannerActivity
-         * y MainActivity. De esta forma la conexión no se pierde
-         * al cambiar de pantalla.
-         */
         private val mainHandler = Handler(Looper.getMainLooper())
 
         private var sharedScanner: BluetoothLeScanner? = null
@@ -106,10 +101,6 @@ class BleManager(
         get() = sharedDeviceName
 
     init {
-        /*
-         * Cada nueva Activity actualiza los callbacks,
-         * pero conserva la misma conexión GATT.
-         */
         connectionCallback = onConnectionChange
         authenticatedCallback = onAuthenticated
         dataCallback = onData
@@ -120,10 +111,6 @@ class BleManager(
     // ESCANEO AUTOMÁTICO ANTIGUO
     // ═══════════════════════════════════════════════
 
-    /*
-     * Se conserva para que MainActivity continúe compilando.
-     * La nueva ScannerActivity utilizará connect(device).
-     */
     @SuppressLint("MissingPermission")
     fun connect() {
         val adapter = bluetoothAdapter
@@ -409,14 +396,15 @@ class BleManager(
                 }
             }
 
-            Log.i(
-                TAG,
-                "Servicios encontrados. Autenticando..."
-            )
+            /*
+             * NO envía "1" aquí. Solo notifica que los servicios
+             * están listos para que ScannerActivity navegue a
+             * MainActivity. La autenticación real (enviar "1")
+             * se hace cuando el usuario presiona Viaje Seguro.
+             */
+            Log.i(TAG, "Servicios listos. Esperando activación...")
 
-            mainHandler.postDelayed({
-                authenticate()
-            }, 500L)
+            notificarAutenticado()
         }
 
         @Deprecated(
@@ -449,15 +437,17 @@ class BleManager(
     // AUTENTICACIÓN Y COMANDOS
     // ═══════════════════════════════════════════════
 
+    /*
+     * Envía "1" al ESP32 y marca como autenticado.
+     * Se llama desde MainActivity al presionar Viaje Seguro,
+     * NO automáticamente al conectar.
+     */
     fun authenticate() {
         val sent = enviarComando("1")
 
         if (sent) {
             sharedAuthenticated = true
-
-            Log.i(TAG, "Autenticación enviada")
-
-            notificarAutenticado()
+            Log.i(TAG, "Autenticación enviada — comandos habilitados")
         }
     }
 
@@ -468,6 +458,12 @@ class BleManager(
         }
 
         enviarComando("ARRANCAR")
+    }
+
+    fun sendDetenerArranque() {
+        if (!sharedAuthenticated) return
+
+        enviarComando("STOP_START")
     }
 
     fun sendDesbloquear() {

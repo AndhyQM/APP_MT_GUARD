@@ -16,12 +16,13 @@ import androidx.core.content.ContextCompat
 
 class BeaconScanner(
     private val context: Context,
+    private val targetMac: String? = null,
     private val onVehicleState: (contacto: Boolean, arranque: Boolean) -> Unit,
     private val onError: (String) -> Unit = {}
 ) {
     companion object {
         private const val TAG = "BeaconScanner"
-        private const val TARGET_NAME = "MT GUARD"
+        private const val TARGET_PREFIX = "MT GUARD"
     }
 
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
@@ -31,6 +32,9 @@ class BeaconScanner(
 
     private var scanner: BluetoothLeScanner? = null
     private var scanning = false
+
+    val isScanning: Boolean
+        get() = scanning
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -54,7 +58,7 @@ class BeaconScanner(
         try {
             scanner?.startScan(null, settings, scanCallback)
             scanning = true
-            Log.i(TAG, "Escaneo beacon iniciado")
+            Log.i(TAG, "Beacon scan iniciado (MAC: ${targetMac ?: "cualquiera"})")
         } catch (e: Exception) {
             onError("Error escaneo: ${e.message}")
         }
@@ -65,38 +69,46 @@ class BeaconScanner(
         if (!scanning) return
         try { scanner?.stopScan(scanCallback) } catch (_: Exception) {}
         scanning = false
-        Log.i(TAG, "Escaneo beacon detenido")
     }
 
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val record = result.scanRecord ?: return
-            val name = record.deviceName ?: result.device.name
-            if (name != TARGET_NAME) return
+            val name = try {
+                record.deviceName ?: result.device.name
+            } catch (_: SecurityException) {
+                null
+            }
+
+            // Filtrar por nombre — startsWith, no match exacto
+            if (name == null || !name.startsWith(TARGET_PREFIX, ignoreCase = true)) return
+
+            // Filtrar por MAC si se especificó
+            if (targetMac != null) {
+                val deviceAddress = try {
+                    result.device.address
+                } catch (_: SecurityException) {
+                    return
+                }
+                if (!deviceAddress.equals(targetMac, ignoreCase = true)) return
+            }
 
             // Leer manufacturer data
-            val manufacturerData = record.manufacturerSpecificData ?: return
-            for (i in 0 until manufacturerData.size()) {
-                val companyId = manufacturerData.keyAt(i)
-                val data = manufacturerData.valueAt(i) ?: continue
+            // Con manufacturer_len=2 en Bluedroid, los 2 bytes del beacon
+            // quedan como Company ID (little-endian), sin payload adicional.
+            // Android los expone en manufacturerSpecificData.keyAt(i)
+            val mfgData = record.manufacturerSpecificData ?: return
+            if (mfgData.size() == 0) return
 
-                // El ESP32 manda 2 bytes como beacon:
-                // byte alto (bit 8) = arranque (0x01 o 0x00)
-                // byte bajo (bit 0) = contacto (0x01 o 0x00)
-                //
-                // Android lee manufacturer data como:
-                // companyId = primeros 2 bytes little-endian
-                // El uint16 beacon_val queda en companyId
+            val companyId = mfgData.keyAt(0)
+            val beaconVal = companyId and 0xFFFF
 
-                val beaconVal = companyId and 0xFFFF
-                val arranque = ((beaconVal shr 8) and 0x01) == 1
-                val contacto = (beaconVal and 0x01) == 1
+            // byte bajo = contacto, byte alto = arranque
+            val contacto = (beaconVal and 0x01) == 1
+            val arranque = ((beaconVal shr 8) and 0x01) == 1
 
-                Log.d(TAG, "Beacon: arranque=$arranque contacto=$contacto (raw=0x${beaconVal.toString(16)})")
-                onVehicleState(contacto, arranque)
-                return
-            }
+            onVehicleState(contacto, arranque)
         }
 
         override fun onScanFailed(errorCode: Int) {
