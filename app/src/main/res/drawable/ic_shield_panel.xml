@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Escudo -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2
+        L4,5
+        V11
+        C4,16.05 7.41,20.74 12,22
+        C16.59,20.74 20,16.05 20,11
+        V5
+        Z" />
+
+    <!-- Interior -->
+    <path
+        android:fillColor="#FF050B14"
+        android:pathData="M12,4.18
+        L18,6.43
+        V11
+        C18,15.15 15.39,18.95 12,20.08
+        C8.61,18.95 6,15.15 6,11
+        V6.43
+        Z" />
+
+    <!-- Verificación -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10.7,15.7
+        L7.9,12.9
+        L9.3,11.5
+        L10.7,12.9
+        L15.1,8.5
+        L16.5,9.9
+        Z" />
+
+</vector>

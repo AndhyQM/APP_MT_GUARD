@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="180dp"
+    android:height="180dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Escudo -->
+    <path
+        android:pathData="M256,32 L426,92 L426,235 C426,343 355,429 256,480 C157,429 86,343 86,235 L86,92 Z"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF168CFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Brillo interior -->
+    <path
+        android:pathData="M256,63 L397,113 L397,232 C397,320 340,392 256,438"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF42D8FF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Techo del vehículo -->
+    <path
+        android:pathData="M157,285 L185,221 C191,207 204,198 219,198 L293,198 C308,198 321,207 327,221 L355,285"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="15"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Frente del vehículo -->
+    <path
+        android:pathData="M147,286 L365,286 L349,355 L163,355 Z"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF42D8FF"
+        android:strokeWidth="15"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Parabrisas -->
+    <path
+        android:pathData="M201,222 L311,222 L329,272 L183,272 Z"
+        android:fillColor="#22168CFF"
+        android:strokeColor="#FF168CFF"
+        android:strokeWidth="7"
+        android:strokeLineJoin="round" />
+
+    <!-- Faro izquierdo -->
+    <path
+        android:pathData="M171,310 L217,310"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="13"
+        android:strokeLineCap="round" />
+
+    <!-- Faro derecho -->
+    <path
+        android:pathData="M295,310 L341,310"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="13"
+        android:strokeLineCap="round" />
+
+    <!-- Parrilla -->
+    <path
+        android:pathData="M225,330 L287,330"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF168CFF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round" />
+
+</vector>

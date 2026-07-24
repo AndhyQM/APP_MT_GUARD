@@ -1,346 +1,669 @@
 package com.tuapp.mt_guard
 
-import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Build
+import android.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
-import android.telephony.SmsManager
+import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.airbnb.lottie.LottieAnimationView
+import com.airbnb.lottie.LottieDrawable
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.model.KeyPath
+import com.airbnb.lottie.value.LottieValueCallback
 
 class MainActivity : AppCompatActivity() {
 
-    // UI
+    private lateinit var btnBack: View
+    private lateinit var btnConfig: View
+
     private lateinit var viewBleDot: View
     private lateinit var tvBleStatus: TextView
-    private lateinit var dotContacto: View
-    private lateinit var tvContacto: TextView
-    private lateinit var dotArranque: View
-    private lateinit var tvArranque: TextView
-    private lateinit var dotAuth: View
-    private lateinit var tvAuth: TextView
-    private lateinit var btnArrancar: Button
+
+    private lateinit var tvDeviceName: TextView
+    private lateinit var tvDeviceMac: TextView
+
     private lateinit var btnDesbloquear: Button
-    private lateinit var btnConectar: Button
-    private lateinit var btnAlerta: Button
-    private lateinit var tvUltimoEnvio: TextView
-    private lateinit var btnConfig: Button
+    private lateinit var btnArrancar: Button
+    private lateinit var btnViajeSeguro: Button
 
-    // Lógica
+    private lateinit var lottieVehicle: LottieAnimationView
+    private lateinit var lottieShield: LottieAnimationView
+
     private lateinit var bleManager: BleManager
-    private lateinit var beaconScanner: BeaconScanner
-    private lateinit var locationManager: LocationManager
-    private var ultimaUbicacion: Location? = null
 
-    companion object {
-        private const val PREFS_NAME = "MT_GUARD_Prefs"
-        private const val KEY_NUMERO = "numero_contacto"
-        private const val REQUEST_PERMISOS = 100
+    private var saliendoAlEscaner = false
+    private var viajeSeguroActivo = false
+
+    /*
+     * Modo demo: llega como extra desde ScannerActivity.
+     * Permite probar animaciones sin el módulo ESP32.
+     */
+    private val demoMode: Boolean by lazy {
+        intent.getBooleanExtra("DEMO_MODE", false) ||
+                ScannerActivity.DEMO_MODE
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_main)
 
-        // ── Bind UI ──
-        viewBleDot    = findViewById(R.id.viewBleDot)
-        tvBleStatus   = findViewById(R.id.tvBleStatus)
-        dotContacto   = findViewById(R.id.dotContacto)
-        tvContacto    = findViewById(R.id.tvContacto)
-        dotArranque   = findViewById(R.id.dotArranque)
-        tvArranque    = findViewById(R.id.tvArranque)
-        dotAuth       = findViewById(R.id.dotAuth)
-        tvAuth        = findViewById(R.id.tvAuth)
-        btnArrancar   = findViewById(R.id.btnArrancar)
-        btnDesbloquear= findViewById(R.id.btnDesbloquear)
-        btnConectar   = findViewById(R.id.btnConectar)
-        btnAlerta     = findViewById(R.id.btnAlerta)
-        tvUltimoEnvio = findViewById(R.id.tvUltimoEnvio)
-        btnConfig     = findViewById(R.id.btnConfig)
+        enlazarVistas()
+        configurarAnimaciones()
+        configurarBleManager()
+        configurarBotones()
+        configurarBotonAtrasDelSistema()
+        mostrarDispositivo()
 
-        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        pedirPermisos()
+        if (demoMode) {
+            aplicarEstadoDemo()
+        }
+    }
 
-        // ── BLE Manager ──
+    // ═══════════════════════════════════════════════
+    // VISTAS
+    // ═══════════════════════════════════════════════
+
+    private fun enlazarVistas() {
+        btnBack = findViewById(
+            R.id.btnBack
+        )
+
+        btnConfig = findViewById(
+            R.id.btnConfig
+        )
+
+        viewBleDot = findViewById(
+            R.id.viewBleDot
+        )
+
+        tvBleStatus = findViewById(
+            R.id.tvBleStatus
+        )
+
+        tvDeviceName = findViewById(
+            R.id.tvDeviceName
+        )
+
+        tvDeviceMac = findViewById(
+            R.id.tvDeviceMac
+        )
+
+        btnDesbloquear = findViewById(
+            R.id.btnDesbloquear
+        )
+
+        btnArrancar = findViewById(
+            R.id.btnArrancar
+        )
+
+        btnViajeSeguro = findViewById(
+            R.id.btnViajeSeguro
+        )
+
+        lottieVehicle = findViewById(
+            R.id.lottieVehicle
+        )
+
+        lottieShield = findViewById(
+            R.id.lottieShield
+        )
+    }
+
+    // ═══════════════════════════════════════════════
+    // ANIMACIONES
+    // ═══════════════════════════════════════════════
+
+    private fun configurarAnimaciones() {
+        /*
+         * El vehículo arranca congelado en el primer
+         * frame. Solo se anima al iniciar viaje seguro.
+         */
+        lottieVehicle.repeatCount = 0
+        lottieVehicle.progress = 0f
+
+        /*
+         * El escudo queda invisible y quieto hasta
+         * que el viaje seguro se active.
+         */
+        lottieShield.repeatCount = 0
+        lottieShield.progress = 0f
+        lottieShield.alpha = 0f
+
+        /*
+         * La composición se carga en background.
+         * Los KeyPath solo resuelven después de esto.
+         */
+        lottieVehicle.addLottieOnCompositionLoadedListener {
+            pintarEdificios()
+            pintarLineaPiso()
+        }
+    }
+
+    private fun pintarEdificios() {
+        val colorEdificios = PorterDuffColorFilter(
+            Color.WHITE,
+            PorterDuff.Mode.SRC_ATOP
+        )
+
+        /*
+         * "buldings" está mal escrito en el JSON original.
+         * Hay que respetarlo tal cual o el KeyPath no resuelve.
+         */
+        lottieVehicle.addValueCallback(
+            KeyPath("Pre-comp 2", "Layer 1/buldings.ai", "**"),
+            LottieProperty.COLOR_FILTER,
+            LottieValueCallback(colorEdificios)
+        )
+    }
+
+    private fun pintarLineaPiso() {
+        /*
+         * Shape Layer 1 sí es vector real, acepta
+         * STROKE_COLOR directo. Venía en #242E44,
+         * invisible sobre fondo oscuro.
+         */
+        lottieVehicle.addValueCallback(
+            KeyPath("Shape Layer 1", "Shape 1", "Stroke 1"),
+            LottieProperty.STROKE_COLOR,
+            LottieValueCallback(Color.WHITE)
+        )
+    }
+
+    private fun reproducirViajeSeguro() {
+        viajeSeguroActivo = true
+
+        // El carro sí queda en bucle infinito
+        lottieVehicle.cancelAnimation()
+        lottieVehicle.repeatCount = LottieDrawable.INFINITE
+        lottieVehicle.progress = 0f
+        lottieVehicle.playAnimation()
+
+        /*
+         * El escudo se reproduce una sola vez
+         * y se queda congelado en el último frame.
+         */
+        lottieShield.cancelAnimation()
+        lottieShield.repeatCount = 0
+        lottieShield.progress = 0f
+        lottieShield.playAnimation()
+
+        lottieShield.animate()
+            .alpha(1f)
+            .setDuration(400)
+            .start()
+
+        btnViajeSeguro.text =
+            "VIAJE SEGURO ACTIVO"
+
+        /*
+         * Una vez activado ya no se puede volver
+         * a tocar desde la app.
+         */
+        btnViajeSeguro.isEnabled = false
+    }
+
+    /*
+     * No se usa desde el botón. Queda disponible para
+     * cuando el módulo reporte que el viaje terminó.
+     */
+    private fun detenerViajeSeguro() {
+        viajeSeguroActivo = false
+
+        lottieShield.animate()
+            .alpha(0f)
+            .setDuration(300)
+            .withEndAction {
+                lottieShield.cancelAnimation()
+                lottieShield.progress = 0f
+            }
+            .start()
+
+        lottieVehicle.cancelAnimation()
+        lottieVehicle.repeatCount = 0
+        lottieVehicle.progress = 0f
+
+        btnViajeSeguro.text =
+            "INICIAR VIAJE SEGURO"
+
+        btnViajeSeguro.isEnabled = listoParaComandos()
+    }
+
+    // ═══════════════════════════════════════════════
+    // MODO DEMO
+    // ═══════════════════════════════════════════════
+
+    private fun aplicarEstadoDemo() {
+        viewBleDot.setBackgroundResource(
+            R.drawable.status_dot_connected
+        )
+
+        tvBleStatus.text = "Conectado (demo)"
+
+        tvBleStatus.setTextColor(
+            ContextCompat.getColor(
+                this,
+                R.color.status_ok
+            )
+        )
+
+        habilitarControles(true)
+    }
+
+    // ═══════════════════════════════════════════════
+    // BLE
+    // ═══════════════════════════════════════════════
+
+    private fun configurarBleManager() {
         bleManager = BleManager(
             context = this,
+
             onConnectionChange = { connected ->
-                runOnUiThread { actualizarEstadoBle(connected) }
+                runOnUiThread {
+                    if (demoMode) {
+                        return@runOnUiThread
+                    }
+
+                    actualizarConexion(
+                        connected
+                    )
+                }
             },
+
             onAuthenticated = {
-                runOnUiThread { actualizarEstadoAuth(true) }
+                runOnUiThread {
+                    habilitarControles(
+                        true
+                    )
+                }
             },
+
             onData = { data ->
-                runOnUiThread {
-                    Toast.makeText(this, "ESP32: $data", Toast.LENGTH_SHORT).show()
-                }
+                /*
+                 * Los datos recibidos no se muestran
+                 * en el panel principal.
+                 *
+                 * Después se mostrarán dentro de:
+                 * Configuración → Beacon.
+                 */
+                android.util.Log.d(
+                    "MainActivity",
+                    "Datos MT Guard: $data"
+                )
             },
-            onError = { msg ->
+
+            onError = { message ->
                 runOnUiThread {
-                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        message,
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         )
+    }
 
-        // ── Beacon Scanner ──
-        beaconScanner = BeaconScanner(
-            context = this,
-            onVehicleState = { contacto, arranque ->
-                runOnUiThread { actualizarEstadoVehiculo(contacto, arranque) }
-            },
-            onError = { msg ->
-                runOnUiThread {
-                    Toast.makeText(this, "Beacon: $msg", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
+    // ═══════════════════════════════════════════════
+    // BOTONES
+    // ═══════════════════════════════════════════════
 
-        // ── Botones ──
-        btnConectar.setOnClickListener {
-            if (bleManager.isConnected) {
-                bleManager.disconnect()
-            } else {
-                btnConectar.text = "BUSCANDO..."
-                btnConectar.isEnabled = false
-                bleManager.connect()
-            }
+    private fun configurarBotones() {
+        btnBack.setOnClickListener {
+            volverAlEscaner()
         }
 
-        btnArrancar.setOnClickListener {
-            bleManager.sendArrancar()
-            Toast.makeText(this, "Arranque enviado (3 seg)", Toast.LENGTH_SHORT).show()
+        btnConfig.setOnClickListener {
+            startActivity(
+                Intent(
+                    this,
+                    ConfigPinActivity::class.java
+                )
+            )
+
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
         }
 
         btnDesbloquear.setOnClickListener {
-            bleManager.sendDesbloquear()
-            Toast.makeText(this, "Puerta desbloqueada", Toast.LENGTH_SHORT).show()
+            if (!listoParaComandos()) {
+                mostrarMensajeNoConectado()
+                return@setOnClickListener
+            }
+
+            if (!demoMode) {
+                bleManager.sendDesbloquear()
+            }
+
+            Toast.makeText(
+                this,
+                "Comando de desbloqueo enviado",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
-        btnAlerta.setOnClickListener { enviarAlerta() }
+        btnArrancar.setOnClickListener {
+            if (!listoParaComandos()) {
+                mostrarMensajeNoConectado()
+                return@setOnClickListener
+            }
 
-        btnConfig.setOnClickListener {
-            startActivity(Intent(this, ConfigActivity::class.java))
+            if (!demoMode) {
+                bleManager.sendArrancar()
+            }
+
+            Toast.makeText(
+                this,
+                "Comando de arranque enviado",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
-        iniciarServicio()
+        btnViajeSeguro.setOnClickListener {
+            /*
+             * El viaje seguro es de una sola vía:
+             * el chofer lo activa y ya no se apaga
+             * desde este botón.
+             */
+            if (viajeSeguroActivo) {
+                return@setOnClickListener
+            }
+
+            if (!listoParaComandos()) {
+                mostrarMensajeNoConectado()
+                return@setOnClickListener
+            }
+
+            reproducirViajeSeguro()
+
+            if (!demoMode) {
+                bleManager.sendIniciarViajeSeguro()
+            }
+
+            Toast.makeText(
+                this,
+                "Viaje seguro iniciado",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // Retroalimentación táctil en los tres botones
+        aplicarEfectoPresion(btnDesbloquear)
+        aplicarEfectoPresion(btnArrancar)
+        aplicarEfectoPresion(btnViajeSeguro)
     }
+
+    /*
+     * Encoge el botón mientras se mantiene presionado
+     * y dispara una vibración corta al tocarlo.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun aplicarEfectoPresion(boton: View) {
+        boton.setOnTouchListener { view, event ->
+            when (event.action) {
+
+                MotionEvent.ACTION_DOWN -> {
+                    if (view.isEnabled) {
+                        view.animate()
+                            .scaleX(0.96f)
+                            .scaleY(0.96f)
+                            .setDuration(90)
+                            .start()
+
+                        view.performHapticFeedback(
+                            HapticFeedbackConstants.VIRTUAL_KEY
+                        )
+                    }
+                }
+
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_CANCEL -> {
+                    view.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(120)
+                        .start()
+                }
+            }
+
+            /*
+             * false para que el OnClickListener
+             * siga funcionando normal.
+             */
+            false
+        }
+    }
+
+    private fun listoParaComandos(): Boolean {
+        if (demoMode) {
+            return true
+        }
+
+        return bleManager.isConnected &&
+                bleManager.isAuthenticated
+    }
+
+    private fun configurarBotonAtrasDelSistema() {
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+
+                override fun handleOnBackPressed() {
+                    volverAlEscaner()
+                }
+            }
+        )
+    }
+
+    private fun mostrarMensajeNoConectado() {
+        Toast.makeText(
+            this,
+            "El módulo MT Guard no está conectado",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    // ═══════════════════════════════════════════════
+    // INFORMACIÓN DEL DISPOSITIVO
+    // ═══════════════════════════════════════════════
+
+    private fun mostrarDispositivo() {
+        val rawName =
+            intent.getStringExtra(
+                "DEVICE_NAME"
+            )
+                ?: bleManager.connectedDeviceName
+                ?: "MT GUARD"
+
+        val deviceAddress =
+            intent.getStringExtra(
+                "DEVICE_ADDRESS"
+            )
+                ?: bleManager.connectedDeviceAddress
+                ?: "Dirección no disponible"
+
+        tvDeviceName.text = crearNombreVisual(
+            rawName,
+            deviceAddress
+        )
+
+        tvDeviceMac.text = deviceAddress
+    }
+
+    private fun crearNombreVisual(
+        rawName: String,
+        address: String
+    ): String {
+        if (
+            !rawName.trim().equals(
+                "MT GUARD",
+                ignoreCase = true
+            )
+        ) {
+            return rawName
+        }
+
+        val cleanAddress = address
+            .replace(":", "")
+            .replace("-", "")
+
+        val suffix =
+            if (
+                address.contains(":") &&
+                cleanAddress.length >= 4
+            ) {
+                cleanAddress.takeLast(4)
+            } else {
+                "001"
+            }
+
+        return "MTGUARD-$suffix"
+    }
+
+    // ═══════════════════════════════════════════════
+    // ESTADO DE CONEXIÓN
+    // ═══════════════════════════════════════════════
+
+    private fun actualizarConexion(
+        connected: Boolean
+    ) {
+        if (connected) {
+            viewBleDot.setBackgroundResource(
+                R.drawable.status_dot_connected
+            )
+
+            tvBleStatus.text =
+                "Conectado"
+
+            tvBleStatus.setTextColor(
+                ContextCompat.getColor(
+                    this,
+                    R.color.status_ok
+                )
+            )
+        } else {
+            viewBleDot.setBackgroundResource(
+                R.drawable.status_dot_disconnected
+            )
+
+            tvBleStatus.text =
+                "Desconectado"
+
+            tvBleStatus.setTextColor(
+                ContextCompat.getColor(
+                    this,
+                    R.color.status_danger
+                )
+            )
+        }
+
+        habilitarControles(
+            connected &&
+                    bleManager.isAuthenticated
+        )
+    }
+
+    private fun habilitarControles(
+        enabled: Boolean
+    ) {
+        btnDesbloquear.isEnabled = enabled
+        btnArrancar.isEnabled = enabled
+
+        /*
+         * El viaje seguro no se rehabilita si ya
+         * está activo, ni siquiera al volver de
+         * otra pantalla.
+         */
+        btnViajeSeguro.isEnabled =
+            enabled && !viajeSeguroActivo
+
+        val alpha = if (enabled) {
+            1f
+        } else {
+            0.45f
+        }
+
+        btnDesbloquear.alpha = alpha
+        btnArrancar.alpha = alpha
+        btnViajeSeguro.alpha = alpha
+    }
+
+    // ═══════════════════════════════════════════════
+    // REGRESAR AL ESCÁNER
+    // ═══════════════════════════════════════════════
+
+    private fun volverAlEscaner() {
+        if (saliendoAlEscaner) {
+            return
+        }
+
+        saliendoAlEscaner = true
+
+        if (!demoMode) {
+            bleManager.disconnect()
+        }
+
+        val intent = Intent(
+            this,
+            ScannerActivity::class.java
+        )
+
+        intent.flags =
+            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+        startActivity(intent)
+
+        overridePendingTransition(
+            android.R.anim.fade_in,
+            android.R.anim.fade_out
+        )
+
+        finish()
+    }
+
+    // ═══════════════════════════════════════════════
+    // CICLO DE VIDA
+    // ═══════════════════════════════════════════════
 
     override fun onResume() {
         super.onResume()
-        iniciarGPS()
-        beaconScanner.start()
-        // Refrescar estado visual
-        actualizarEstadoBle(bleManager.isConnected)
-        actualizarEstadoAuth(bleManager.isAuthenticated)
-    }
 
-    override fun onPause() {
-        super.onPause()
-        locationManager.removeUpdates(locationListener)
-        beaconScanner.stop()
+        if (demoMode) {
+            aplicarEstadoDemo()
+            return
+        }
+
+        actualizarConexion(
+            bleManager.isConnected
+        )
+
+        habilitarControles(
+            bleManager.isConnected &&
+                    bleManager.isAuthenticated
+        )
     }
 
     override fun onDestroy() {
+        /*
+         * No desconectamos al abrir configuración
+         * ni durante un cambio de orientación.
+         *
+         * La desconexión se realiza explícitamente
+         * cuando el usuario regresa al escáner.
+         */
         super.onDestroy()
-        bleManager.disconnect()
-    }
-
-    // ══════════════════════════════════════════════════
-    //  ACTUALIZAR UI
-    // ══════════════════════════════════════════════════
-
-    private fun actualizarEstadoBle(connected: Boolean) {
-        if (connected) {
-            viewBleDot.setBackgroundResource(R.drawable.status_dot_connected)
-            tvBleStatus.text = "Conectado"
-            tvBleStatus.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
-            btnConectar.text = "DESCONECTAR"
-            btnConectar.isEnabled = true
-        } else {
-            viewBleDot.setBackgroundResource(R.drawable.status_dot_disconnected)
-            tvBleStatus.text = "Desconectado"
-            tvBleStatus.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
-            btnConectar.text = "CONECTAR"
-            btnConectar.isEnabled = true
-            btnArrancar.isEnabled = false
-            btnDesbloquear.isEnabled = false
-            actualizarEstadoAuth(false)
-        }
-    }
-
-    private fun actualizarEstadoAuth(authenticated: Boolean) {
-        if (authenticated) {
-            dotAuth.setBackgroundResource(R.drawable.status_dot_connected)
-            tvAuth.text = "SÍ"
-            tvAuth.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
-            btnArrancar.isEnabled = true
-            btnDesbloquear.isEnabled = true
-            btnArrancar.alpha = 1.0f
-            btnDesbloquear.alpha = 1.0f
-        } else {
-            dotAuth.setBackgroundResource(R.drawable.status_dot_disconnected)
-            tvAuth.text = "NO"
-            tvAuth.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
-            btnArrancar.isEnabled = false
-            btnDesbloquear.isEnabled = false
-            btnArrancar.alpha = 0.4f
-            btnDesbloquear.alpha = 0.4f
-        }
-    }
-
-    private fun actualizarEstadoVehiculo(contacto: Boolean, arranque: Boolean) {
-        // Contacto
-        if (contacto) {
-            dotContacto.setBackgroundResource(R.drawable.status_dot_connected)
-            tvContacto.text = "ABIERTO"
-            tvContacto.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
-        } else {
-            dotContacto.setBackgroundResource(R.drawable.status_dot_disconnected)
-            tvContacto.text = "CERRADO"
-            tvContacto.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-        }
-
-        // Arranque
-        if (arranque) {
-            dotArranque.setBackgroundResource(R.drawable.status_dot_connected)
-            tvArranque.text = "ON"
-            tvArranque.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
-        } else {
-            dotArranque.setBackgroundResource(R.drawable.status_dot_disconnected)
-            tvArranque.text = "OFF"
-            tvArranque.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-        }
-    }
-
-    // ══════════════════════════════════════════════════
-    //  ALERTA SMS
-    // ══════════════════════════════════════════════════
-
-    private fun enviarAlerta() {
-        val numero = obtenerNumeroGuardado()
-        if (numero == null) {
-            Toast.makeText(this, "Configura un número de emergencia primero", Toast.LENGTH_LONG).show()
-            startActivity(Intent(this, ConfigActivity::class.java))
-            return
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
-            != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "No hay permiso SMS", Toast.LENGTH_LONG).show()
-            pedirPermisos()
-            return
-        }
-
-        val mensaje = armarMensaje()
-        try {
-            val smsManager = SmsManager.getDefault()
-            val partes = smsManager.divideMessage(mensaje)
-            smsManager.sendMultipartTextMessage(numero, null, partes, null, null)
-            val hora = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-            tvUltimoEnvio.text = "Enviado: $hora a $numero"
-            Toast.makeText(this, "Alerta enviada a $numero", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun armarMensaje(): String {
-        val sb = StringBuilder()
-        sb.append("ALERTA MT GUARD\n")
-        val hora = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(Date())
-        sb.append("Fecha: $hora\n")
-        if (ultimaUbicacion != null) {
-            val lat = ultimaUbicacion!!.latitude
-            val lon = ultimaUbicacion!!.longitude
-            sb.append("https://maps.google.com/?q=$lat,$lon")
-        } else {
-            sb.append("Ubicación: No disponible")
-        }
-        return sb.toString()
-    }
-
-    private fun obtenerNumeroGuardado(): String? {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        return prefs.getString(KEY_NUMERO, null)
-    }
-
-    // ══════════════════════════════════════════════════
-    //  GPS
-    // ══════════════════════════════════════════════════
-
-    private fun iniciarGPS() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) return
-
-        val provider = when {
-            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-            else -> null
-        }
-        if (provider != null) {
-            locationManager.requestLocationUpdates(provider, 5000L, 10f, locationListener)
-            val ultima = locationManager.getLastKnownLocation(provider)
-            if (ultima != null) ultimaUbicacion = ultima
-        }
-    }
-
-    private val locationListener = object : LocationListener {
-        override fun onLocationChanged(location: Location) { ultimaUbicacion = location }
-        override fun onProviderEnabled(provider: String) {}
-        override fun onProviderDisabled(provider: String) {}
-    }
-
-    // ══════════════════════════════════════════════════
-    //  SERVICIO Y PERMISOS
-    // ══════════════════════════════════════════════════
-
-    private fun iniciarServicio() {
-        val intent = Intent(this, GuardService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
-    }
-
-    private fun pedirPermisos() {
-        val faltantes = mutableListOf<String>()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED)
-            faltantes.add(Manifest.permission.SEND_SMS)
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            faltantes.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-                faltantes.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
-                faltantes.add(Manifest.permission.BLUETOOTH_SCAN)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-                faltantes.add(Manifest.permission.BLUETOOTH_CONNECT)
-        }
-        if (faltantes.isNotEmpty())
-            ActivityCompat.requestPermissions(this, faltantes.toTypedArray(), REQUEST_PERMISOS)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_PERMISOS) {
-            for (i in permissions.indices) {
-                if (permissions[i] == Manifest.permission.ACCESS_FINE_LOCATION && grantResults[i] == PackageManager.PERMISSION_GRANTED)
-                    iniciarGPS()
-            }
-        }
     }
 }

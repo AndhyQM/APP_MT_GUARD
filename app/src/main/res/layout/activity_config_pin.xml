@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_splash"
+    android:fitsSystemWindows="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/screen_padding_h"
+    android:paddingTop="@dimen/screen_padding_top"
+    android:paddingEnd="@dimen/screen_padding_h"
+    android:paddingBottom="@dimen/screen_padding_bottom">
+
+    <!-- ═══ ENCABEZADO ═══ -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/header_height">
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="@dimen/header_button_size"
+            android:layout_height="@dimen/header_button_size"
+            android:layout_gravity="start|center_vertical"
+            android:background="@android:color/transparent"
+            android:contentDescription="Volver"
+            android:padding="9dp"
+            app:srcCompat="@drawable/ic_back_panel"
+            app:tint="@color/accent_light" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:letterSpacing="0.08"
+            android:text="VERIFICAR PIN"
+            android:textColor="@color/accent_light"
+            android:textSize="@dimen/title_text_size"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <!-- ═══ LOGO ═══ -->
+    <ImageView
+        android:layout_width="@dimen/pin_logo_size"
+        android:layout_height="@dimen/pin_logo_size"
+        android:layout_marginTop="26dp"
+        android:contentDescription="Configuración protegida"
+        android:src="@drawable/mt_guard_logo" />
+
+    <!-- ═══ INSTRUCCIÓN ═══ -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:gravity="center"
+        android:lineSpacingExtra="5dp"
+        android:text="Ingresa tu PIN para acceder&#10;a la configuración"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
+
+    <!-- ═══ INDICADORES DEL PIN ═══ -->
+    <LinearLayout
+        android:id="@+id/pinIndicators"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/pinDot1"
+            android:layout_width="@dimen/pin_dot_size"
+            android:layout_height="@dimen/pin_dot_size"
+            android:layout_margin="@dimen/pin_dot_margin"
+            android:background="@drawable/pin_dot_empty" />
+
+        <View
+            android:id="@+id/pinDot2"
+            android:layout_width="@dimen/pin_dot_size"
+            android:layout_height="@dimen/pin_dot_size"
+            android:layout_margin="@dimen/pin_dot_margin"
+            android:background="@drawable/pin_dot_empty" />
+
+        <View
+            android:id="@+id/pinDot3"
+            android:layout_width="@dimen/pin_dot_size"
+            android:layout_height="@dimen/pin_dot_size"
+            android:layout_margin="@dimen/pin_dot_margin"
+            android:background="@drawable/pin_dot_empty" />
+
+        <View
+            android:id="@+id/pinDot4"
+            android:layout_width="@dimen/pin_dot_size"
+            android:layout_height="@dimen/pin_dot_size"
+            android:layout_margin="@dimen/pin_dot_margin"
+            android:background="@drawable/pin_dot_empty" />
+
+    </LinearLayout>
+
+    <!-- ═══ MENSAJE DE ERROR ═══ -->
+    <!-- Alto fijo para que el teclado no salte -->
+    <TextView
+        android:id="@+id/tvPinError"
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="PIN incorrecto"
+        android:textColor="@color/status_danger"
+        android:textSize="13sp"
+        android:visibility="invisible" />
+
+    <!-- ═══ TECLADO NUMÉRICO ═══ -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!-- Fila 1 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key1"
+                style="@style/PinKeyStyle"
+                android:text="1" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key2"
+                style="@style/PinKeyStyle"
+                android:text="2" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key3"
+                style="@style/PinKeyStyle"
+                android:text="3" />
+        </LinearLayout>
+
+        <!-- Fila 2 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key4"
+                style="@style/PinKeyStyle"
+                android:text="4" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key5"
+                style="@style/PinKeyStyle"
+                android:text="5" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key6"
+                style="@style/PinKeyStyle"
+                android:text="6" />
+        </LinearLayout>
+
+        <!-- Fila 3 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key7"
+                style="@style/PinKeyStyle"
+                android:text="7" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key8"
+                style="@style/PinKeyStyle"
+                android:text="8" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key9"
+                style="@style/PinKeyStyle"
+                android:text="9" />
+        </LinearLayout>
+
+        <!-- Fila 4: huella / 0 / borrar -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/keyFingerprint"
+                android:layout_width="@dimen/pin_key_size"
+                android:layout_height="@dimen/pin_key_size"
+                android:layout_marginStart="@dimen/pin_key_gap"
+                android:layout_marginEnd="@dimen/pin_key_gap"
+                android:background="@drawable/pin_key_bg"
+                android:contentDescription="Usar huella digital"
+                android:padding="16dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/huella_mt_guard"
+                app:tint="@android:color/white" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/key0"
+                style="@style/PinKeyStyle"
+                android:text="0" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/keyDelete"
+                android:layout_width="@dimen/pin_key_size"
+                android:layout_height="@dimen/pin_key_size"
+                android:layout_marginStart="@dimen/pin_key_gap"
+                android:layout_marginEnd="@dimen/pin_key_gap"
+                android:background="@drawable/pin_key_bg"
+                android:contentDescription="Borrar"
+                android:padding="20dp"
+                app:srcCompat="@drawable/ic_backspace"
+                app:tint="@color/text_primary" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

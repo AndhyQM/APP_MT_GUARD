@@ -1,248 +1,252 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="@color/bg_primary">
+    android:background="@drawable/bg_splash"
+    android:fitsSystemWindows="true"
+    android:paddingStart="@dimen/screen_padding_h"
+    android:paddingTop="@dimen/screen_padding_top"
+    android:paddingEnd="@dimen/screen_padding_h"
+    android:paddingBottom="@dimen/screen_padding_bottom">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+    <!-- ═══ ENCABEZADO ═══ -->
+    <FrameLayout
+        android:id="@+id/headerContainer"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/header_height"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <!-- ═══ HEADER ═══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="20dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="MT GUARD"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="@color/accent"
-                android:letterSpacing="0.1" />
-
-            <!-- Indicador BLE -->
-            <View
-                android:id="@+id/viewBleDot"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:background="@drawable/status_dot_disconnected"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:id="@+id/tvBleStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Desconectado"
-                android:textSize="13sp"
-                android:textColor="@color/status_danger" />
-        </LinearLayout>
-
-        <!-- ═══ CARD: ESTADO DEL VEHÍCULO ═══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/card_bg"
-            android:padding="20dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ESTADO DEL VEHÍCULO"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_secondary"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Contacto -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
-
-                <View
-                    android:id="@+id/dotContacto"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/status_dot_disconnected"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Contacto"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary" />
-
-                <TextView
-                    android:id="@+id/tvContacto"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="CERRADO"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_secondary" />
-            </LinearLayout>
-
-            <!-- Arranque -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
-
-                <View
-                    android:id="@+id/dotArranque"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/status_dot_disconnected"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Arranque"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary" />
-
-                <TextView
-                    android:id="@+id/tvArranque"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="OFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_secondary" />
-            </LinearLayout>
-
-            <!-- Estado de autenticación -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <View
-                    android:id="@+id/dotAuth"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/status_dot_disconnected"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Autenticación"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary" />
-
-                <TextView
-                    android:id="@+id/tvAuth"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="NO"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/status_danger" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- ═══ BOTONES DE CONTROL ═══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
-
-            <!-- Botón ARRANCAR -->
-            <Button
-                android:id="@+id/btnArrancar"
-                android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:layout_weight="1"
-                android:text="ARRANCAR"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="@color/bg_primary"
-                android:background="@drawable/btn_arranque_bg"
-                android:layout_marginEnd="8dp"
-                android:enabled="false" />
-
-            <!-- Botón DESBLOQUEAR -->
-            <Button
-                android:id="@+id/btnDesbloquear"
-                android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:layout_weight="1"
-                android:text="DESBLOQUEAR"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/bg_primary"
-                android:background="@drawable/btn_desbloquear_bg"
-                android:layout_marginStart="8dp"
-                android:enabled="false" />
-        </LinearLayout>
-
-        <!-- ═══ BOTÓN CONECTAR / DESCONECTAR BLE ═══ -->
-        <Button
-            android:id="@+id/btnConectar"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="CONECTAR"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="@color/accent"
-            android:background="@drawable/btn_config_bg"
-            android:layout_marginBottom="16dp" />
-
-        <!-- ═══ BOTÓN ALERTA ═══ -->
-        <Button
-            android:id="@+id/btnAlerta"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="ENVIAR ALERTA"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:background="@drawable/btn_alerta_bg"
-            android:layout_marginBottom="12dp" />
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="@dimen/header_button_size"
+            android:layout_height="@dimen/header_button_size"
+            android:layout_gravity="start|center_vertical"
+            android:background="@android:color/transparent"
+            android:contentDescription="Volver"
+            android:padding="9dp"
+            app:srcCompat="@drawable/ic_back_panel"
+            app:tint="@color/accent_light" />
 
         <TextView
-            android:id="@+id/tvUltimoEnvio"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Último envío: nunca"
-            android:textSize="12sp"
-            android:textColor="@color/text_hint"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:layout_marginBottom="20dp" />
+            android:letterSpacing="0.08"
+            android:text="MT GUARD"
+            android:textColor="@color/accent_light"
+            android:textSize="@dimen/title_text_size"
+            android:textStyle="bold" />
 
-        <!-- ═══ BOTÓN CONFIGURACIONES ═══ -->
-        <Button
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/btnConfig"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="CONFIGURACIONES"
-            android:textSize="14sp"
-            android:textColor="@color/text_secondary"
-            android:background="@drawable/btn_config_bg" />
+            android:layout_width="@dimen/header_button_size"
+            android:layout_height="@dimen/header_button_size"
+            android:layout_gravity="end|center_vertical"
+            android:background="@drawable/settings_small_bg"
+            android:contentDescription="Configuración"
+            android:padding="10dp"
+            app:srcCompat="@drawable/ic_settings_panel"
+            app:tint="@color/accent_light" />
+    </FrameLayout>
 
+    <!-- ═══ ESTADO DE CONEXIÓN ═══ -->
+    <LinearLayout
+        android:id="@+id/statusContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerContainer">
+
+        <View
+            android:id="@+id/viewBleDot"
+            android:layout_width="9dp"
+            android:layout_height="9dp"
+            android:layout_marginEnd="7dp"
+            android:background="@drawable/status_dot_connected" />
+
+        <TextView
+            android:id="@+id/tvBleStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Conectado"
+            android:textColor="@color/status_ok"
+            android:textSize="@dimen/status_text_size" />
     </LinearLayout>
-</ScrollView>
+
+    <!-- ═══ NOMBRE DEL DISPOSITIVO ═══ -->
+    <TextView
+        android:id="@+id/tvDeviceName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:letterSpacing="0.04"
+        android:maxLines="1"
+        android:text="MTGUARD-001"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/device_name_text_size"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statusContainer" />
+
+    <TextView
+        android:id="@+id/tvDeviceMac"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:letterSpacing="0.06"
+        android:maxLines="1"
+        android:text="AA:BB:CC:DD:EE:01"
+        android:textColor="@color/text_hint"
+        android:textSize="@dimen/device_mac_text_size"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvDeviceName" />
+
+    <!-- ═══ BOTONES DE CONTROL (anclados abajo) ═══ -->
+    <!-- Orden visual de arriba hacia abajo:
+         VIAJE SEGURO / ARRANCAR / DESBLOQUEAR
+         En el XML van al revés porque cada uno se
+         ancla al que tiene debajo. -->
+
+    <!-- Desbloquear puerta: pegado al fondo -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnDesbloquear"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:background="@drawable/panel_button_blue"
+        android:drawableStart="@drawable/ic_lock_open_panel"
+        android:drawablePadding="12dp"
+        android:elevation="0dp"
+        android:gravity="center"
+        android:letterSpacing="0.04"
+        android:paddingStart="@dimen/button_icon_padding"
+        android:paddingEnd="@dimen/button_icon_padding"
+        android:text="DESBLOQUEAR PUERTA"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/button_text_size"
+        android:textStyle="bold"
+        app:backgroundTint="@null"
+        app:drawableTint="@color/text_primary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Arrancar vehículo: en medio -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnArrancar"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginBottom="@dimen/button_spacing"
+        android:background="@drawable/panel_button_green"
+        android:drawableStart="@drawable/ic_power_panel"
+        android:drawablePadding="12dp"
+        android:elevation="0dp"
+        android:gravity="center"
+        android:letterSpacing="0.04"
+        android:paddingStart="@dimen/button_icon_padding"
+        android:paddingEnd="@dimen/button_icon_padding"
+        android:text="ARRANCAR VEHÍCULO"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/button_text_size"
+        android:textStyle="bold"
+        app:backgroundTint="@null"
+        app:drawableTint="@color/text_primary"
+        app:layout_constraintBottom_toTopOf="@id/btnDesbloquear"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Viaje seguro: el primero de los tres -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnViajeSeguro"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginBottom="@dimen/button_spacing"
+        android:background="@drawable/panel_button_purple"
+        android:drawableStart="@drawable/ic_shield_panel"
+        android:drawablePadding="12dp"
+        android:elevation="0dp"
+        android:gravity="center"
+        android:letterSpacing="0.04"
+        android:paddingStart="@dimen/button_icon_padding"
+        android:paddingEnd="@dimen/button_icon_padding"
+        android:text="INICIAR VIAJE SEGURO"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/button_text_size"
+        android:textStyle="bold"
+        app:backgroundTint="@null"
+        app:drawableTint="@color/text_primary"
+        app:layout_constraintBottom_toTopOf="@id/btnArrancar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- ═══ ÁREA DEL VEHÍCULO ═══ -->
+    <!-- Se apoya en btnViajeSeguro, que ahora es
+         el botón más alto de los tres -->
+    <FrameLayout
+        android:id="@+id/vehicleContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="@dimen/vehicle_buttons_gap"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@id/btnViajeSeguro"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvDeviceMac">
+
+        <!-- Resplandor tecnológico de fondo -->
+        <View
+            android:layout_width="@dimen/vehicle_glow_width"
+            android:layout_height="@dimen/vehicle_glow_height"
+            android:layout_gravity="bottom|center_horizontal"
+            android:translationY="@dimen/vehicle_offset_y"
+            android:background="@drawable/panel_vehicle_glow_compact" />
+
+        <!-- ══ ANIMACIÓN DEL VEHÍCULO ══ -->
+        <!-- gravity=bottom lo pega al fondo del contenedor.
+             translationY compensa el lienzo vacío del JSON
+             que queda debajo de las llantas. -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieVehicle"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/vehicle_height"
+            android:layout_gravity="bottom|center_horizontal"
+            android:translationY="@dimen/vehicle_offset_y"
+            android:scaleType="centerCrop"
+            android:scaleX="1.7"
+            android:scaleY="1.7"
+            app:lottie_autoPlay="false"
+            app:lottie_fileName="car_mt_guard.json"
+            app:lottie_loop="true"
+            app:lottie_speed="1.0" />
+
+        <!-- ══ ESCUDO DE SEGURIDAD ══ -->
+        <!-- Invisible hasta que arranque el viaje seguro -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieShield"
+            android:layout_width="@dimen/shield_size"
+            android:layout_height="@dimen/shield_size"
+            android:layout_gravity="top|center_horizontal"
+            android:alpha="0"
+            android:translationY="@dimen/shield_offset_y"
+            app:lottie_autoPlay="false"
+            app:lottie_fileName="shield_pulse.json"
+            app:lottie_loop="true"
+            app:lottie_speed="0.8" />
+
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

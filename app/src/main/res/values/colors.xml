@@ -1,33 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Fondo -->
-    <color name="bg_primary">#FF0D0D0D</color>
-    <color name="bg_surface">#FF1A1A2E</color>
-    <color name="bg_card">#FF16213E</color>
 
-    <!-- Acento azul eléctrico -->
+<resources>
+
+    <!-- Fondos tecnológicos -->
+    <color name="bg_primary">#FF050B14</color>
+    <color name="bg_surface">#FF071426</color>
+    <color name="bg_card">#FF0B1B30</color>
+
+    <!-- Colores de marca -->
+    <color name="blue_primary">#FF168CFF</color>
     <color name="accent">#FF00B4D8</color>
     <color name="accent_dark">#FF0096C7</color>
-    <color name="accent_light">#FF48CAE4</color>
+    <color name="accent_light">#FF42D8FF</color>
     <color name="accent_ripple">#3300B4D8</color>
 
     <!-- Texto -->
     <color name="text_primary">#FFFFFFFF</color>
-    <color name="text_secondary">#FFB0B0B0</color>
-    <color name="text_hint">#FF666666</color>
+    <color name="text_secondary">#FFB8C4D4</color>
+    <color name="text_hint">#FF6F7C8E</color>
 
-    <!-- Semáforo de estados -->
-    <color name="status_ok">#FF00E676</color>
+    <!-- Estados -->
+    <color name="status_ok">#FF22C77A</color>
     <color name="status_warning">#FFFFD600</color>
-    <color name="status_danger">#FFFF3D3D</color>
+    <color name="status_danger">#FFFF3D4D</color>
 
-    <!-- Botones especiales -->
+    <!-- Botones de MainActivity -->
     <color name="btn_arranque">#FF00B4D8</color>
     <color name="btn_desbloquear">#FF0096C7</color>
-    <color name="btn_alerta">#FFFF3D3D</color>
-    <color name="btn_config">#FF2A2A4A</color>
+    <color name="btn_alerta">#FFFF3D4D</color>
+    <color name="btn_config">#FF15243B</color>
 
-    <!-- Bordes y divisores -->
-    <color name="divider">#FF2A2A4A</color>
-    <color name="border_input">#FF3A3A5A</color>
+    <!-- Bordes -->
+    <color name="divider">#FF24354D</color>
+    <color name="border_input">#FF31445F</color>
+
 </resources>

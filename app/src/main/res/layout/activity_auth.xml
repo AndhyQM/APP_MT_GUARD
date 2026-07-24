@@ -1,127 +1,247 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="32dp"
-    android:gravity="center"
-    android:background="@color/bg_primary">
+    android:background="@drawable/bg_splash"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:clipToPadding="false">
 
-    <!-- Logo / Título -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="MT GUARD"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        android:textColor="@color/accent"
-        android:letterSpacing="0.15"
-        android:layout_marginBottom="4dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sistema de Seguridad Vehicular"
-        android:textSize="12sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginBottom="40dp" />
-
-    <!-- Subtítulo dinámico -->
-    <TextView
-        android:id="@+id/tvTitulo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ingresa tu PIN"
-        android:textSize="18sp"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="24dp" />
-
-    <!-- PIN -->
-    <EditText
-        android:id="@+id/etPin"
-        android:layout_width="220dp"
-        android:layout_height="56dp"
-        android:hint="PIN (4 dígitos)"
-        android:inputType="numberPassword"
-        android:gravity="center"
-        android:maxLength="4"
-        android:textSize="22sp"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_hint"
-        android:background="@drawable/input_bg"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp" />
-
-    <!-- Confirmar PIN -->
-    <EditText
-        android:id="@+id/etPinConfirm"
-        android:layout_width="220dp"
-        android:layout_height="56dp"
-        android:hint="Confirmar PIN"
-        android:inputType="numberPassword"
-        android:gravity="center"
-        android:maxLength="4"
-        android:textSize="22sp"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_hint"
-        android:background="@drawable/input_bg"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:layout_marginTop="12dp"
-        android:visibility="gone" />
-
-    <!-- Pregunta secreta -->
-    <EditText
-        android:id="@+id/etPregunta"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:hint="Pregunta secreta"
-        android:textSize="14sp"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_hint"
-        android:background="@drawable/input_bg"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:layout_marginTop="12dp"
-        android:visibility="gone" />
-
-    <!-- Respuesta secreta -->
-    <EditText
-        android:id="@+id/etRespuesta"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:hint="Respuesta secreta"
-        android:textSize="14sp"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_hint"
-        android:background="@drawable/input_bg"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:layout_marginTop="12dp"
-        android:visibility="gone" />
-
-    <!-- Botón principal -->
-    <Button
-        android:id="@+id/btnAccion"
-        android:layout_width="220dp"
-        android:layout_height="52dp"
-        android:text="ENTRAR"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@color/bg_primary"
-        android:backgroundTint="@color/accent"
-        android:layout_marginTop="28dp" />
-
-    <!-- Olvidé PIN -->
-    <TextView
-        android:id="@+id/tvOlvide"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="¿Olvidaste tu PIN?"
-        android:textSize="14sp"
-        android:textColor="@color/accent_light"
-        android:layout_marginTop="20dp"
-        android:visibility="gone" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="30dp"
+        android:paddingTop="46dp"
+        android:paddingEnd="30dp"
+        android:paddingBottom="30dp">
 
-</LinearLayout>
+        <!-- Logo de MT Guard -->
+        <ImageView
+            android:id="@+id/ivLogo"
+            android:layout_width="78dp"
+            android:layout_height="78dp"
+            android:contentDescription="@string/app_name"
+            android:scaleType="fitCenter"
+            android:src="@drawable/mt_guard_logo" />
+
+        <!-- Bienvenida -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Bienvenido a"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp" />
+
+        <!-- Nombre de la aplicación -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.06"
+            android:text="MT GUARD"
+            android:textColor="@color/text_primary"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <!-- Título dinámico -->
+        <TextView
+            android:id="@+id/tvTitulo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="Confirma tu identidad para continuar"
+            android:textAlignment="center"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <!-- Imagen de huella -->
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/fingerprintView"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_marginTop="28dp"
+            android:background="@drawable/fingerprint_circle_clean"
+            android:clickable="true"
+            android:contentDescription="Acceso biométrico"
+            android:focusable="true"
+            android:padding="26dp"
+            android:scaleType="fitCenter"
+            app:srcCompat="@drawable/huella_mt_guard"
+            app:tint="@color/accent_light"
+            app:tintMode="src_in" />
+
+        <!-- Botón de acceso biométrico -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnBiometria"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="26dp"
+            android:background="@drawable/button_primary"
+            android:drawablePadding="10dp"
+            android:elevation="0dp"
+            android:gravity="center"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:text="Acceder con huella"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:backgroundTint="@null" />
+
+        <!-- Separador -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="@color/divider" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:text="o usa tu PIN"
+                android:textColor="@color/text_hint"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="@color/divider" />
+
+        </LinearLayout>
+
+        <!-- Campo PIN -->
+        <EditText
+            android:id="@+id/etPin"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/input_bg"
+            android:digits="0123456789"
+            android:gravity="center"
+            android:hint="PIN de 4 dígitos"
+            android:imeOptions="actionDone"
+            android:importantForAutofill="no"
+            android:inputType="numberPassword"
+            android:maxLength="4"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:selectAllOnFocus="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="22sp" />
+
+        <!-- Confirmar PIN -->
+        <EditText
+            android:id="@+id/etPinConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/input_bg"
+            android:digits="0123456789"
+            android:gravity="center"
+            android:hint="Confirmar PIN"
+            android:imeOptions="actionDone"
+            android:importantForAutofill="no"
+            android:inputType="numberPassword"
+            android:maxLength="4"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:selectAllOnFocus="true"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="22sp"
+            android:visibility="gone" />
+
+        <!-- Pregunta secreta -->
+        <EditText
+            android:id="@+id/etPregunta"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/input_bg"
+            android:gravity="center_vertical"
+            android:hint="Pregunta secreta"
+            android:imeOptions="actionNext"
+            android:inputType="textCapSentences"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Respuesta secreta -->
+        <EditText
+            android:id="@+id/etRespuesta"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/input_bg"
+            android:gravity="center_vertical"
+            android:hint="Respuesta secreta"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Botón para ingresar con PIN -->
+        <Button
+            android:id="@+id/btnAccion"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/button_secondary"
+            android:text="ENTRAR CON PIN"
+            android:textColor="@color/accent_light"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <!-- Recuperar PIN -->
+        <TextView
+            android:id="@+id/tvOlvide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp"
+            android:text="¿Olvidaste tu PIN?"
+            android:textColor="@color/accent_light"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Mensaje de seguridad -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="26dp"
+            android:gravity="center"
+            android:text="Acceso protegido y cifrado"
+            android:textColor="@color/status_ok"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+</ScrollView>

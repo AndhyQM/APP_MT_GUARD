@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Área del vehículo -->
+    <dimen name="vehicle_glow_width">400dp</dimen>
+    <dimen name="vehicle_glow_height">520dp</dimen>
+    <dimen name="ground_glow_width">290dp</dimen>
+    <dimen name="ground_glow_height">36dp</dimen>
+
+    <dimen name="vehicle_buttons_gap">30dp</dimen>
+
+    <!-- Tamaño y posición del carro (independientes) -->
+    <dimen name="vehicle_height">320dp</dimen>
+    <dimen name="vehicle_offset_y">65dp</dimen>
+
+    <!-- Escudo -->
+    <dimen name="shield_size">100dp</dimen>
+    <dimen name="shield_offset_y">28dp</dimen>
+
+    <!-- Botones -->
+    <dimen name="button_height">56dp</dimen>
+    <dimen name="button_text_size">14sp</dimen>
+    <dimen name="button_spacing">12dp</dimen>
+    <dimen name="button_icon_padding">18dp</dimen>
+
+    <!-- Textos -->
+    <dimen name="title_text_size">18sp</dimen>
+    <dimen name="device_name_text_size">23sp</dimen>
+    <dimen name="device_mac_text_size">12sp</dimen>
+    <dimen name="status_text_size">12sp</dimen>
+
+    <!-- Espaciado -->
+    <dimen name="screen_padding_h">18dp</dimen>
+    <dimen name="screen_padding_top">10dp</dimen>
+    <dimen name="screen_padding_bottom">24dp</dimen>
+    <dimen name="header_height">46dp</dimen>
+    <dimen name="header_button_size">42dp</dimen>
+
+    <!-- Pantalla de PIN -->
+    <dimen name="pin_key_size">72dp</dimen>
+    <dimen name="pin_key_gap">14dp</dimen>
+    <dimen name="pin_key_text_size">26sp</dimen>
+    <dimen name="pin_dot_size">14dp</dimen>
+    <dimen name="pin_dot_margin">10dp</dimen>
+    <dimen name="pin_logo_size">88dp</dimen>
+
+</resources>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Escudo -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M24,3
+        L41,10
+        V22
+        C41,32.7 34,41.2 24,45
+        C14,41.2 7,32.7 7,22
+        V10
+        Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Candado -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M18,23
+        V19
+        C18,15.7 20.7,13 24,13
+        C27.3,13 30,15.7 30,19
+        V23"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round" />
+
+    <path
+        android:fillColor="#22168CFF"
+        android:pathData="M16,23
+        H32
+        V34
+        H16
+        Z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round" />
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,26
+        C22.9,26 22,26.9 22,28
+        C22,28.7 22.4,29.3 23,29.7
+        V32
+        H25
+        V29.7
+        C25.6,29.3 26,28.7 26,28
+        C26,26.9 25.1,26 24,26
+        Z" />
+
+</vector>
