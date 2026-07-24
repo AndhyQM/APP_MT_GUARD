@@ -71,6 +71,17 @@ class MainActivity : AppCompatActivity() {
         if (demoMode) {
             aplicarEstadoDemo()
         }
+
+        // ═══ SERVICIO EN SEGUNDO PLANO ═══
+        GuardService.iniciar(this)
+        GuardService.solicitarIgnorarBateria(this)
+
+        // Xiaomi/MIUI: pedir autostart solo la primera vez
+        val prefs = getSharedPreferences("MT_GUARD_Config", MODE_PRIVATE)
+        if (GuardService.esXiaomi() && !prefs.getBoolean("autostart_pedido", false)) {
+            prefs.edit().putBoolean("autostart_pedido", true).apply()
+            GuardService.abrirAutoStartXiaomi(this)
+        }
     }
 
     // ═══════════════════════════════════════════════
@@ -332,6 +343,8 @@ class MainActivity : AppCompatActivity() {
                 bleManager.authenticate()
             }
 
+            // ═══ MARCAR AUTENTICADO GLOBALMENTE ═══
+            GuardService.autenticadoGlobal = true
             reproducirViajeSeguro()
 
             if (!demoMode) {
@@ -501,25 +514,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun actualizarConexion(connected: Boolean) {
         if (connected) {
-            viewBleDot.setBackgroundResource(
-                R.drawable.status_dot_connected
-            )
+            viewBleDot.setBackgroundResource(R.drawable.status_dot_connected)
             tvBleStatus.text = "Conectado"
-            tvBleStatus.setTextColor(
-                ContextCompat.getColor(this, R.color.status_ok)
-            )
+            tvBleStatus.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
         } else {
-            viewBleDot.setBackgroundResource(
-                R.drawable.status_dot_disconnected
-            )
+            viewBleDot.setBackgroundResource(R.drawable.status_dot_disconnected)
             tvBleStatus.text = "Desconectado"
-            tvBleStatus.setTextColor(
-                ContextCompat.getColor(this, R.color.status_danger)
-            )
+            tvBleStatus.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
+
+            // ═══ SI SE PIERDE CONEXIÓN, YA NO ESTÁ AUTENTICADO ═══
+            GuardService.autenticadoGlobal = false   // 👈 AGREGA ESTO
         }
 
         habilitarControles(connected)
     }
+
 
     private fun habilitarControles(enabled: Boolean) {
         // Viaje Seguro se habilita con la conexión (si no está ya activo)
@@ -548,6 +557,8 @@ class MainActivity : AppCompatActivity() {
         saliendoAlEscaner = true
 
         detenerArranque()
+
+        GuardService.autenticadoGlobal = false
 
         if (!demoMode) {
             bleManager.disconnect()

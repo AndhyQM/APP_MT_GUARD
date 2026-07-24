@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission
         android:name="android.permission.BLUETOOTH"
@@ -28,6 +29,8 @@
         android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission
         android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission
+        android:name="android.permission.WAKE_LOCK" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
@@ -39,7 +42,8 @@
         android:label="MT GUARD"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MT_GUARD">
+        android:theme="@style/Theme.MT_GUARD"
+        tools:targetApi="31">
 
         <activity
             android:name=".SplashActivity"
@@ -51,41 +55,15 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".AuthActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ScannerActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ConfigPinActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ConfigActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ConfigBeaconActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ConfigProfileActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ConfigModuleActivity"
-            android:exported="false" />
+        <activity android:name=".AuthActivity" android:exported="false" />
+        <activity android:name=".ScannerActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".ConfigPinActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".ConfigActivity" android:exported="false" />
+        <activity android:name=".ConfigBeaconActivity" android:exported="false" />
+        <activity android:name=".ConfigProfileActivity" android:exported="false" />
+        <activity android:name=".ConfigModuleActivity" android:exported="false" />
 
         <service
             android:name=".GuardService"

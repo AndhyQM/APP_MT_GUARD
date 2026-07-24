@@ -14,6 +14,8 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
+        GuardService.iniciar(this)
+
         val radar1 = findViewById<View>(R.id.radar1)
         val radar2 = findViewById<View>(R.id.radar2)
         val logo = findViewById<View>(R.id.ivLogo)
