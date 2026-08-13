@@ -1,6 +1,5 @@
 package com.tuapp.mt_guard
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -10,8 +9,6 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -31,7 +28,7 @@ class ScannerActivity : AppCompatActivity() {
         private const val TARGET_PREFIX = "MT GUARD"
         private const val SCAN_DURATION_MS = 20_000L
 
-        const val DEMO_MODE = false
+        const val DEMO_MODE = true
 
         private const val DEMO_SALTO_DIRECTO = false
         private const val DEMO_NOMBRE = "MT GUARD • EE01"
@@ -79,25 +76,6 @@ class ScannerActivity : AppCompatActivity() {
         val tvSignal: TextView
     )
 
-    private val permissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { result ->
-            val allGranted = result.values.all { it }
-
-            if (allGranted) {
-                verificarBluetooth()
-            } else {
-                tvScanStatus.text =
-                    "Permisos denegados — actívalos en Ajustes"
-                Toast.makeText(
-                    this,
-                    "Debes autorizar Bluetooth, Ubicación y SMS para usar la app",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-
     private val enableBluetoothLauncher =
         registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -121,8 +99,27 @@ class ScannerActivity : AppCompatActivity() {
             return
         }
 
+        ejecutarConfiguracionInicial()
         configurarBleManager()
-        prepararEscaneo()
+        verificarBluetooth()
+    }
+
+    // ═══════════════════════════════════════════════
+    // CONFIGURACIÓN INICIAL (batería + autoarranque)
+    // Se pide UNA sola vez en la vida de la app,
+    // después del login para no ensuciar la pantalla.
+    // ═══════════════════════════════════════════════
+
+    private fun ejecutarConfiguracionInicial() {
+        val prefs = getSharedPreferences("MT_GUARD_Config", MODE_PRIVATE)
+        if (prefs.getBoolean("optimizacion_pedida", false)) return
+        prefs.edit().putBoolean("optimizacion_pedida", true).apply()
+
+        GuardService.solicitarIgnorarBateria(this)
+
+        if (GuardService.esXiaomi()) {
+            GuardService.abrirAutoStartXiaomi(this)
+        }
     }
 
     private fun enlazarVistas() {
@@ -182,7 +179,7 @@ class ScannerActivity : AppCompatActivity() {
             }
 
             if (scanning) detenerEscaneo(showFinishedText = true)
-            else prepararEscaneo()
+            else verificarBluetooth()
         }
     }
 
@@ -313,24 +310,17 @@ class ScannerActivity : AppCompatActivity() {
             intent.putExtra("DEVICE_ADDRESS", address)
             intent.putExtra("DEMO_MODE", true)
             startActivity(intent)
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
             finish()
         }, 350L)
     }
 
     // ═══════════════════════════════════════════════
-    // PERMISOS
+    // BLUETOOTH
     // ═══════════════════════════════════════════════
-
-    private fun prepararEscaneo() {
-        if (!tienePermisos()) {
-            solicitarPermisos()
-            return
-        }
-
-        pedirPermisoNotificaciones()
-        verificarBluetooth()
-    }
 
     @SuppressLint("MissingPermission")
     private fun verificarBluetooth() {
@@ -349,61 +339,6 @@ class ScannerActivity : AppCompatActivity() {
         }
 
         iniciarEscaneo()
-    }
-
-    private fun tienePermisos(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.BLUETOOTH_SCAN
-            ) == PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(
-                        this, Manifest.permission.BLUETOOTH_CONNECT
-                    ) == PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(
-                        this, Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(
-                        this, Manifest.permission.SEND_SMS
-                    ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(
-                        this, Manifest.permission.SEND_SMS
-                    ) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    private fun solicitarPermisos() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.SEND_SMS
-            )
-        } else {
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.SEND_SMS
-            )
-        }
-
-        permissionLauncher.launch(permissions)
-    }
-
-    private fun pedirPermisoNotificaciones() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionLauncher.launch(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS)
-                )
-            }
-        }
     }
 
     // ═══════════════════════════════════════════════
@@ -469,7 +404,10 @@ class ScannerActivity : AppCompatActivity() {
         handler.removeCallbacks(stopScanRunnable)
 
         if (scanning) {
-            try { scanner?.stopScan(scanCallback) } catch (_: Exception) {}
+            try {
+                scanner?.stopScan(scanCallback)
+            } catch (_: Exception) {
+            }
         }
 
         scanning = false
@@ -491,18 +429,29 @@ class ScannerActivity : AppCompatActivity() {
 
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
+        override fun onScanResult(
+            callbackType: Int,
+            result: ScanResult
+        ) {
             val deviceName = try {
-                result.scanRecord?.deviceName ?: result.device.name
-            } catch (_: SecurityException) { null }
+                result.scanRecord?.deviceName
+                    ?: result.device.name
+            } catch (_: SecurityException) {
+                null
+            }
 
             if (deviceName == null ||
-                !deviceName.startsWith(TARGET_PREFIX, ignoreCase = true)
+                !deviceName.startsWith(
+                    TARGET_PREFIX,
+                    ignoreCase = true
+                )
             ) return
 
             val address = try {
                 result.device.address
-            } catch (_: SecurityException) { return }
+            } catch (_: SecurityException) {
+                return
+            }
 
             runOnUiThread {
                 if (connecting) return@runOnUiThread
@@ -539,22 +488,39 @@ class ScannerActivity : AppCompatActivity() {
         val existingDevice = devices[address]
 
         if (existingDevice == null) {
-            val foundDevice = FoundDevice(device = device, name = name, rssi = rssi)
+            val foundDevice = FoundDevice(
+                device = device,
+                name = name,
+                rssi = rssi
+            )
             devices[address] = foundDevice
-            crearTarjeta(address = address, foundDevice = foundDevice)
+            crearTarjeta(
+                address = address,
+                foundDevice = foundDevice
+            )
         } else {
             existingDevice.name = name
             existingDevice.rssi = rssi
-            actualizarTarjeta(address = address, foundDevice = existingDevice)
+            actualizarTarjeta(
+                address = address,
+                foundDevice = existingDevice
+            )
         }
 
         tvEmpty.visibility = View.GONE
         tvScanStatus.text = "${devices.size} dispositivo(s) MT Guard"
     }
 
-    private fun crearTarjeta(address: String, foundDevice: FoundDevice) {
+    private fun crearTarjeta(
+        address: String,
+        foundDevice: FoundDevice
+    ) {
         val item = LayoutInflater.from(this)
-            .inflate(R.layout.item_mt_device, deviceContainer, false)
+            .inflate(
+                R.layout.item_mt_device,
+                deviceContainer,
+                false
+            )
 
         val row = DeviceRow(
             root = item,
@@ -565,7 +531,10 @@ class ScannerActivity : AppCompatActivity() {
         )
 
         deviceRows[address] = row
-        actualizarTarjeta(address = address, foundDevice = foundDevice)
+        actualizarTarjeta(
+            address = address,
+            foundDevice = foundDevice
+        )
 
         item.setOnClickListener {
             if (!connecting) vincularDispositivo(foundDevice)
@@ -574,9 +543,15 @@ class ScannerActivity : AppCompatActivity() {
         deviceContainer.addView(item)
     }
 
-    private fun actualizarTarjeta(address: String, foundDevice: FoundDevice) {
+    private fun actualizarTarjeta(
+        address: String,
+        foundDevice: FoundDevice
+    ) {
         val row = deviceRows[address] ?: return
-        row.tvName.text = crearNombreVisual(foundDevice.name, address)
+        row.tvName.text = crearNombreVisual(
+            foundDevice.name,
+            address
+        )
         row.tvMac.text = address
         row.tvRssi.text = "${foundDevice.rssi} dBm"
         row.tvSignal.text = obtenerBarrasSenal(foundDevice.rssi)
@@ -594,10 +569,20 @@ class ScannerActivity : AppCompatActivity() {
         }
     }
 
-    private fun crearNombreVisual(advertisedName: String, address: String): String {
-        if (advertisedName.trim() != TARGET_PREFIX) return advertisedName
-        val suffix = address.replace(":", "").takeLast(4)
-        return if (suffix.isNotEmpty()) "$TARGET_PREFIX • $suffix" else TARGET_PREFIX
+    private fun crearNombreVisual(
+        advertisedName: String,
+        address: String
+    ): String {
+        if (advertisedName.trim() != TARGET_PREFIX) {
+            return advertisedName
+        }
+        val suffix = address.replace(":", "")
+            .takeLast(4)
+        return if (suffix.isNotEmpty()) {
+            "$TARGET_PREFIX • $suffix"
+        } else {
+            TARGET_PREFIX
+        }
     }
 
     private fun obtenerBarrasSenal(rssi: Int): String {
@@ -611,9 +596,15 @@ class ScannerActivity : AppCompatActivity() {
 
     private fun obtenerColorSenal(rssi: Int): Int {
         return when {
-            rssi >= -60 -> ContextCompat.getColor(this, R.color.status_ok)
-            rssi >= -75 -> ContextCompat.getColor(this, R.color.accent_light)
-            else -> ContextCompat.getColor(this, R.color.status_warning)
+            rssi >= -60 -> ContextCompat.getColor(
+                this, R.color.status_ok
+            )
+            rssi >= -75 -> ContextCompat.getColor(
+                this, R.color.accent_light
+            )
+            else -> ContextCompat.getColor(
+                this, R.color.status_warning
+            )
         }
     }
 
@@ -630,8 +621,16 @@ class ScannerActivity : AppCompatActivity() {
         habilitarTarjetas(false)
         btnScan.isEnabled = false
 
-        val address = try { foundDevice.device.address } catch (_: SecurityException) { "" }
-        val visualName = crearNombreVisual(foundDevice.name, address)
+        val address = try {
+            foundDevice.device.address
+        } catch (_: SecurityException) {
+            ""
+        }
+
+        val visualName = crearNombreVisual(
+            foundDevice.name,
+            address
+        )
 
         connectionOverlay.visibility = View.VISIBLE
         tvConnectionStatus.text = "Conectando con $visualName..."
@@ -663,23 +662,40 @@ class ScannerActivity : AppCompatActivity() {
 
         connectionOverlay.postDelayed({
             val intent = Intent(this, MainActivity::class.java)
-            intent.putExtra("DEVICE_NAME", bleManager.connectedDeviceName)
-            intent.putExtra("DEVICE_ADDRESS", bleManager.connectedDeviceAddress)
+            intent.putExtra(
+                "DEVICE_NAME",
+                bleManager.connectedDeviceName
+            )
+            intent.putExtra(
+                "DEVICE_ADDRESS",
+                bleManager.connectedDeviceAddress
+            )
             startActivity(intent)
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
             finish()
         }, 350L)
     }
 
     override fun onPause() {
-        if (DEMO_MODE) { super.onPause(); return }
-        if (!connecting) detenerEscaneo(showFinishedText = false)
+        if (DEMO_MODE) {
+            super.onPause()
+            return
+        }
+        if (!connecting) {
+            detenerEscaneo(showFinishedText = false)
+        }
         super.onPause()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
-        if (DEMO_MODE) { super.onDestroy(); return }
+        if (DEMO_MODE) {
+            super.onDestroy()
+            return
+        }
         detenerEscaneo(showFinishedText = false)
         super.onDestroy()
     }

@@ -1,45 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body {
-  margin: 0;
-  background: transparent;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+    }
 
-.nexus-logo-watch {
-  width: 199px;
-  height: 199px;
-  margin: 0 auto;
-  position: relative;
-  border-radius: 50%;
-  overflow: hidden;
-  background: radial-gradient(circle at center, #061522 0%, #071827 45%, #0B2032 100%);
-  border: 6px solid rgba(46,168,255,0.18);
-  box-shadow:
-    0 0 22px rgba(46,168,255,0.25),
-    inset 0 0 28px rgba(46,168,255,0.14);
-}
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-.nexus-logo-watch svg {
-  width: 118%;
-  height: 118%;
-  position: absolute;
-  top: -22px;
-  left: -18px;
-}
-</style>
+    /* SIN borde ni fondo sólido. Solo un glow radial suave
+       que se desvanece a transparente en los bordes.
+       No dibuja ningún círculo duro. */
+    .nexus-logo {
+      width: 96vmin;
+      height: 96vmin;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(
+        circle at center,
+        rgba(46,168,255,0.16) 0%,
+        rgba(46,168,255,0.08) 35%,
+        rgba(46,168,255,0.0) 65%
+      );
+    }
+
+    .nexus-logo svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
 </head>
 <body>
 
-<div class="nexus-logo-watch">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+<div class="nexus-logo">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="60 55 680 680">
     <defs>
       <radialGradient id="core-animated">
         <stop offset="0%" style="stop-color:#FFFFFF">
@@ -62,21 +70,21 @@ body {
     <circle cx="400" cy="320" r="233" fill="none" stroke="#378ADD" stroke-width="2" opacity="0.3"/>
     <circle cx="400" cy="320" r="144" fill="none" stroke="#EF9F27" stroke-width="2" opacity="0.35"/>
 
-    <path d="M 400,130 L 490,200 L 490,440 L 400,510 L 310,440 L 310,200 Z" 
-          fill="rgba(55,138,221,0.1)" 
-          stroke="#378ADD" 
-          stroke-width="6" 
+    <path d="M 400,130 L 490,200 L 490,440 L 400,510 L 310,440 L 310,200 Z"
+          fill="rgba(55,138,221,0.1)"
+          stroke="#378ADD"
+          stroke-width="6"
           opacity="1"/>
 
     <g>
       <animateTransform
-        attributeName="transform"
-        type="rotate"
-        from="0 400 320"
-        to="360 400 320"
-        dur="60s"
-        calcMode="linear"
-        repeatCount="indefinite"
+              attributeName="transform"
+              type="rotate"
+              from="0 400 320"
+              to="360 400 320"
+              dur="60s"
+              calcMode="linear"
+              repeatCount="indefinite"
       />
 
       <g opacity="0.58">
@@ -116,21 +124,13 @@ body {
       <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite"/>
     </circle>
 
-    <text x="400" y="610" text-anchor="middle" fill="url(#text-gradient)" 
-          font-size="140" font-weight="900" letter-spacing="10" 
+    <text x="400" y="610" text-anchor="middle" fill="url(#text-gradient)"
+          font-size="140" font-weight="900" letter-spacing="10"
           font-family="Arial Black, sans-serif">
       NEXUS
     </text>
 
     <line x1="220" y1="660" x2="580" y2="660" stroke="#EF9F27" stroke-width="4" opacity="0.7"/>
-
-    <text x="400" y="700" text-anchor="middle" fill="#378ADD" 
-          font-size="24" font-weight="600" letter-spacing="8" 
-          font-family="Arial, sans-serif">
-      INGENIERÍA MECATRÓNICA
-    </text>
-
-    <line x1="260" y1="715" x2="540" y2="715" stroke="#378ADD" stroke-width="2" opacity="0.5"/>
   </svg>
 </div>
 

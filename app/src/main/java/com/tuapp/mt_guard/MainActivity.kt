@@ -11,6 +11,7 @@ import android.os.Looper
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
+import android.webkit.WebView
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -39,14 +40,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnViajeSeguro: Button
 
     private lateinit var lottieVehicle: LottieAnimationView
-    private lateinit var lottieShield: LottieAnimationView
+    private lateinit var webShield: WebView
 
     private lateinit var bleManager: BleManager
 
     private var saliendoAlEscaner = false
     private var viajeSeguroActivo = false
 
-    // Arranque tipo llave de contacto
     private val arranqueHandler = Handler(Looper.getMainLooper())
     private var arranqueActivo = false
     private val ARRANQUE_INTERVALO_MS = 350L
@@ -71,17 +71,6 @@ class MainActivity : AppCompatActivity() {
         if (demoMode) {
             aplicarEstadoDemo()
         }
-
-        // ═══ SERVICIO EN SEGUNDO PLANO ═══
-        GuardService.iniciar(this)
-        GuardService.solicitarIgnorarBateria(this)
-
-        // Xiaomi/MIUI: pedir autostart solo la primera vez
-        val prefs = getSharedPreferences("MT_GUARD_Config", MODE_PRIVATE)
-        if (GuardService.esXiaomi() && !prefs.getBoolean("autostart_pedido", false)) {
-            prefs.edit().putBoolean("autostart_pedido", true).apply()
-            GuardService.abrirAutoStartXiaomi(this)
-        }
     }
 
     // ═══════════════════════════════════════════════
@@ -99,7 +88,7 @@ class MainActivity : AppCompatActivity() {
         btnArrancar = findViewById(R.id.btnArrancar)
         btnViajeSeguro = findViewById(R.id.btnViajeSeguro)
         lottieVehicle = findViewById(R.id.lottieVehicle)
-        lottieShield = findViewById(R.id.lottieShield)
+        webShield = findViewById(R.id.webShield)
     }
 
     // ═══════════════════════════════════════════════
@@ -110,14 +99,26 @@ class MainActivity : AppCompatActivity() {
         lottieVehicle.repeatCount = 0
         lottieVehicle.progress = 0f
 
-        lottieShield.repeatCount = 0
-        lottieShield.progress = 0f
-        lottieShield.alpha = 0f
+        configurarWebShield()
 
         lottieVehicle.addLottieOnCompositionLoadedListener {
             pintarEdificios()
             pintarLineaPiso()
         }
+    }
+
+    private fun configurarWebShield() {
+        // Fondo transparente para que se vea el panel detrás
+        webShield.setBackgroundColor(Color.TRANSPARENT)
+        webShield.isVerticalScrollBarEnabled = false
+        webShield.isHorizontalScrollBarEnabled = false
+
+        // El SVG se anima solo (SMIL), no necesita JavaScript
+        webShield.settings.javaScriptEnabled = false
+
+        // Precarga el HTML desde assets, pero queda invisible
+        webShield.loadUrl("file:///android_asset/nexus.html")
+        webShield.alpha = 0f
     }
 
     private fun pintarEdificios() {
@@ -149,14 +150,11 @@ class MainActivity : AppCompatActivity() {
         lottieVehicle.progress = 0f
         lottieVehicle.playAnimation()
 
-        lottieShield.cancelAnimation()
-        lottieShield.repeatCount = 0
-        lottieShield.progress = 0f
-        lottieShield.playAnimation()
-
-        lottieShield.animate()
+        // Reinicia la animación del escudo desde cero y lo muestra
+        webShield.reload()
+        webShield.animate()
             .alpha(1f)
-            .setDuration(400)
+            .setDuration(1200)
             .start()
 
         btnViajeSeguro.text = "VIAJE SEGURO ACTIVO"
@@ -166,13 +164,9 @@ class MainActivity : AppCompatActivity() {
     private fun detenerViajeSeguro() {
         viajeSeguroActivo = false
 
-        lottieShield.animate()
+        webShield.animate()
             .alpha(0f)
             .setDuration(300)
-            .withEndAction {
-                lottieShield.cancelAnimation()
-                lottieShield.progress = 0f
-            }
             .start()
 
         lottieVehicle.cancelAnimation()
@@ -218,8 +212,6 @@ class MainActivity : AppCompatActivity() {
 
             onAuthenticated = {
                 runOnUiThread {
-                    // Ya no se usa para habilitar controles automáticamente
-                    // La autenticación ahora se hace al presionar Viaje Seguro
                 }
             },
 
@@ -278,7 +270,6 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
-        // ═══ ARRANCAR — tipo llave de contacto ═══
         btnArrancar.setOnTouchListener { view, event ->
             if (!view.isEnabled) return@setOnTouchListener false
 
@@ -327,7 +318,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // ═══ VIAJE SEGURO — autentica y habilita los demás ═══
         btnViajeSeguro.setOnClickListener {
             if (viajeSeguroActivo) {
                 return@setOnClickListener
@@ -338,12 +328,10 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Autenticar enviando "1" al ESP32
             if (!demoMode) {
                 bleManager.authenticate()
             }
 
-            // ═══ MARCAR AUTENTICADO GLOBALMENTE ═══
             GuardService.autenticadoGlobal = true
             reproducirViajeSeguro()
 
@@ -351,7 +339,6 @@ class MainActivity : AppCompatActivity() {
                 bleManager.sendIniciarViajeSeguro()
             }
 
-            // Ahora sí habilitar arranque y desbloqueo
             habilitarControles(true)
 
             Toast.makeText(
@@ -361,7 +348,6 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
-        // Solo desbloquear — arrancar tiene su propio touch
         aplicarEfectoPresion(btnDesbloquear)
         aplicarEfectoPresion(btnViajeSeguro)
     }
@@ -481,7 +467,10 @@ class MainActivity : AppCompatActivity() {
             ?: bleManager.connectedDeviceAddress
             ?: "Dirección no disponible"
 
-        tvDeviceName.text = crearNombreVisual(rawName, deviceAddress)
+        tvDeviceName.text = crearNombreVisual(
+            rawName,
+            deviceAddress
+        )
         tvDeviceMac.text = deviceAddress
     }
 
@@ -489,7 +478,11 @@ class MainActivity : AppCompatActivity() {
         rawName: String,
         address: String
     ): String {
-        if (!rawName.trim().equals("MT GUARD", ignoreCase = true)) {
+        if (!rawName.trim().equals(
+                "MT GUARD",
+                ignoreCase = true
+            )
+        ) {
             return rawName
         }
 
@@ -498,7 +491,8 @@ class MainActivity : AppCompatActivity() {
             .replace("-", "")
 
         val suffix = if (
-            address.contains(":") && cleanAddress.length >= 4
+            address.contains(":") &&
+            cleanAddress.length >= 4
         ) {
             cleanAddress.takeLast(4)
         } else {
@@ -514,29 +508,39 @@ class MainActivity : AppCompatActivity() {
 
     private fun actualizarConexion(connected: Boolean) {
         if (connected) {
-            viewBleDot.setBackgroundResource(R.drawable.status_dot_connected)
+            viewBleDot.setBackgroundResource(
+                R.drawable.status_dot_connected
+            )
             tvBleStatus.text = "Conectado"
-            tvBleStatus.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
+            tvBleStatus.setTextColor(
+                ContextCompat.getColor(this, R.color.status_ok)
+            )
         } else {
-            viewBleDot.setBackgroundResource(R.drawable.status_dot_disconnected)
+            viewBleDot.setBackgroundResource(
+                R.drawable.status_dot_disconnected
+            )
             tvBleStatus.text = "Desconectado"
-            tvBleStatus.setTextColor(ContextCompat.getColor(this, R.color.status_danger))
+            tvBleStatus.setTextColor(
+                ContextCompat.getColor(
+                    this, R.color.status_danger
+                )
+            )
 
-            // ═══ SI SE PIERDE CONEXIÓN, YA NO ESTÁ AUTENTICADO ═══
-            GuardService.autenticadoGlobal = false   // 👈 AGREGA ESTO
+            GuardService.autenticadoGlobal = false
         }
 
         habilitarControles(connected)
     }
 
-
     private fun habilitarControles(enabled: Boolean) {
-        // Viaje Seguro se habilita con la conexión (si no está ya activo)
-        btnViajeSeguro.isEnabled = enabled && !viajeSeguroActivo
+        btnViajeSeguro.isEnabled =
+            enabled && !viajeSeguroActivo
 
-        // Arrancar y Desbloquear SOLO si viaje seguro ya está activo
-        btnDesbloquear.isEnabled = enabled && viajeSeguroActivo
-        btnArrancar.isEnabled = enabled && viajeSeguroActivo
+        btnDesbloquear.isEnabled =
+            enabled && viajeSeguroActivo
+
+        btnArrancar.isEnabled =
+            enabled && viajeSeguroActivo
 
         btnViajeSeguro.alpha =
             if (btnViajeSeguro.isEnabled) 1f else 0.45f
@@ -598,6 +602,10 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         arranqueHandler.removeCallbacksAndMessages(null)
         arranqueActivo = false
+
+        // Limpieza del WebView para evitar fugas de memoria
+        webShield.destroy()
+
         super.onDestroy()
     }
 }

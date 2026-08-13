@@ -26,16 +26,14 @@ class SplashActivity : AppCompatActivity() {
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private val abrirAuthRunnable = Runnable {
-        abrirPantallaDeAutenticacion()
+    private val abrirSiguienteRunnable = Runnable {
+        abrirSiguientePantalla()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_splash)
-
-        GuardService.iniciar(this)
 
         enlazarVistas()
         prepararVistas()
@@ -84,10 +82,6 @@ class SplashActivity : AppCompatActivity() {
             translationY = 14f
         )
 
-        /*
-         * La animación se reproduce a una velocidad
-         * más moderada.
-         */
         lottieSplashLogo.speed = 1.5f
         lottieSplashLogo.repeatCount = 0
     }
@@ -136,10 +130,6 @@ class SplashActivity : AppCompatActivity() {
             start()
         }
 
-        /*
-         * Inicia Lottie cuando comienza a aparecer
-         * visualmente el logo.
-         */
         lottieSplashLogo.postDelayed(
             {
                 if (!isFinishing && !isDestroyed) {
@@ -264,19 +254,19 @@ class SplashActivity : AppCompatActivity() {
 
     private fun programarCambioDePantalla() {
         handler.postDelayed(
-            abrirAuthRunnable,
+            abrirSiguienteRunnable,
             3600L
         )
     }
 
-    private fun abrirPantallaDeAutenticacion() {
+    private fun abrirSiguientePantalla() {
         if (isFinishing || isDestroyed) {
             return
         }
 
         val intent = Intent(
             this,
-            AuthActivity::class.java
+            PermissionsActivity::class.java
         )
 
         val opciones = ActivityOptionsCompat.makeCustomAnimation(
@@ -296,7 +286,7 @@ class SplashActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         handler.removeCallbacks(
-            abrirAuthRunnable
+            abrirSiguienteRunnable
         )
 
         if (::lottieSplashLogo.isInitialized) {
