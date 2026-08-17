@@ -174,17 +174,18 @@
                 android:textSize="22sp"
                 android:visibility="gone" />
 
-            <!-- Pregunta secreta -->
-            <EditText
-                android:id="@+id/etPregunta"
+            <!-- Pregunta secreta (selector) -->
+            <TextView
+                android:id="@+id/tvPregunta"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="10dp"
                 android:background="@drawable/input_bg"
+                android:clickable="true"
+                android:drawableEnd="@android:drawable/arrow_down_float"
+                android:focusable="true"
                 android:gravity="center_vertical"
-                android:hint="Pregunta secreta"
-                android:imeOptions="actionNext"
-                android:inputType="textCapSentences"
+                android:hint="Selecciona una pregunta secreta"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textColor="@color/text_primary"
@@ -201,7 +202,7 @@
                 android:background="@drawable/input_bg"
                 android:gravity="center_vertical"
                 android:hint="Respuesta secreta"
-                android:imeOptions="actionDone"
+                android:imeOptions="actionNext"
                 android:inputType="text"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
@@ -209,6 +210,55 @@
                 android:textColorHint="@color/text_hint"
                 android:textSize="14sp"
                 android:visibility="gone" />
+
+            <!-- Número de alerta SMS (solo primera instalación) -->
+            <LinearLayout
+                android:id="@+id/layoutPhoneAlert"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/input_bg"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <!-- Prefijo país -->
+                <TextView
+                    android:id="@+id/tvPhonePrefix"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="10dp"
+                    android:text="🇵🇪 +51"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+                <!-- Separador vertical -->
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="28dp"
+                    android:background="@color/divider" />
+
+                <!-- Campo del número -->
+                <EditText
+                    android:id="@+id/etPhoneAlert"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:gravity="center_vertical"
+                    android:hint="9XX XXX XXX"
+                    android:imeOptions="actionDone"
+                    android:inputType="phone"
+                    android:maxLength="11"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="16dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
 
             <!-- Acción -->
             <Button

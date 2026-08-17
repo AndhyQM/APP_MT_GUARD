@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -30,8 +31,12 @@ class AuthActivity : AppCompatActivity() {
 
     private lateinit var etPin: EditText
     private lateinit var etPinConfirm: EditText
-    private lateinit var etPregunta: EditText
+    private lateinit var tvPregunta: TextView
     private lateinit var etRespuesta: EditText
+    private lateinit var etPhoneAlert: EditText
+    private lateinit var layoutPhoneAlert: View
+
+    private var preguntaSeleccionada: Int = -1
 
     private lateinit var btnAccion: Button
     private lateinit var btnBiometria: Button
@@ -68,17 +73,26 @@ class AuthActivity : AppCompatActivity() {
         private const val KEY_PREGUNTA = "pregunta"
         private const val KEY_RESPUESTA = "respuesta_hash"
 
+        private const val KEY_PREGUNTA_INDEX = "pregunta_index"
+
         private const val RETARDO_VERIFICACION_PIN = 180L
         private const val RETARDO_BIOMETRIA = 1100L
+
+        val PREGUNTAS_SECRETAS = arrayOf(
+            "¿Nombre de tu primera mascota?",
+            "¿Nombre de tu mejor amigo de infancia?",
+            "¿En qué ciudad naciste?",
+            "¿Cuál es tu comida favorita?",
+            "¿Nombre de tu primer colegio?",
+            "¿Cuál es tu número de la suerte?",
+            "¿Apodo que te ponían de niño?",
+            "¿Marca de tu primer vehículo?"
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        /*
-         * Evita que el teclado del teléfono aparezca
-         * automáticamente al abrir AuthActivity.
-         */
         window.setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN or
                     WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
@@ -92,10 +106,6 @@ class AuthActivity : AppCompatActivity() {
         configurarEventos()
         configurarVerificacionAutomatica()
 
-        /*
-         * El contenedor recibe el foco inicialmente.
-         * Esto evita que Android abra el teclado del sistema.
-         */
         authRoot.requestFocus()
 
         val prefs = getSharedPreferences(
@@ -133,8 +143,10 @@ class AuthActivity : AppCompatActivity() {
 
         etPin = findViewById(R.id.etPin)
         etPinConfirm = findViewById(R.id.etPinConfirm)
-        etPregunta = findViewById(R.id.etPregunta)
+        tvPregunta = findViewById(R.id.tvPregunta)
         etRespuesta = findViewById(R.id.etRespuesta)
+        etPhoneAlert = findViewById(R.id.etPhoneAlert)
+        layoutPhoneAlert = findViewById(R.id.layoutPhoneAlert)
 
         btnAccion = findViewById(R.id.btnAccion)
         btnBiometria = findViewById(R.id.btnBiometria)
@@ -156,10 +168,6 @@ class AuthActivity : AppCompatActivity() {
 
     private fun configurarTecladoNumericoFijo() {
 
-        /*
-         * Estas dos líneas son las principales:
-         * bloquean el teclado del celular para los PIN.
-         */
         etPin.showSoftInputOnFocus = false
         etPinConfirm.showSoftInputOnFocus = false
 
@@ -169,12 +177,12 @@ class AuthActivity : AppCompatActivity() {
         configurarCampoPin(etPin)
         configurarCampoPin(etPinConfirm)
 
-        /*
-         * Pregunta y respuesta sí utilizan
-         * el teclado normal del teléfono.
-         */
-        configurarCampoTexto(etPregunta)
         configurarCampoTexto(etRespuesta)
+        configurarCampoTexto(etPhoneAlert)
+
+        tvPregunta.setOnClickListener {
+            mostrarSelectorPreguntas()
+        }
 
         val teclasNumericas = mapOf(
             R.id.key0 to "0",
@@ -286,10 +294,6 @@ class AuthActivity : AppCompatActivity() {
 
         ocultarTecladoSistema(campo)
 
-        /*
-         * Refuerzo posterior porque algunos teléfonos
-         * intentan abrir el teclado después del foco.
-         */
         campo.post {
             ocultarTecladoSistema(campo)
         }
@@ -324,10 +328,6 @@ class AuthActivity : AppCompatActivity() {
             numero
         )
 
-        /*
-         * Al completar el primer PIN,
-         * pasa automáticamente a confirmación.
-         */
         if (
             campo == etPin &&
             campo.text.length == 4 &&
@@ -350,10 +350,6 @@ class AuthActivity : AppCompatActivity() {
     private fun borrarUltimoNumero() {
         var campo = campoPinActivo ?: return
 
-        /*
-         * Si la confirmación está vacía,
-         * regresa al primer campo.
-         */
         if (
             campo == etPinConfirm &&
             campo.text.isEmpty() &&
@@ -443,6 +439,32 @@ class AuthActivity : AppCompatActivity() {
     }
 
     // ═══════════════════════════════════════════════
+    // SELECTOR DE PREGUNTAS
+    // ═══════════════════════════════════════════════
+
+    private fun mostrarSelectorPreguntas() {
+        if (modo == Modo.RECUPERAR) return
+
+        ocultarTecladoNumericoFijo()
+        ocultarTecladoSistema(currentFocus ?: authRoot)
+
+        AlertDialog.Builder(this)
+            .setTitle("Elige una pregunta secreta")
+            .setItems(PREGUNTAS_SECRETAS) { _, which ->
+                preguntaSeleccionada = which
+                tvPregunta.text = PREGUNTAS_SECRETAS[which]
+                tvPregunta.setTextColor(
+                    ContextCompat.getColor(this, R.color.text_primary)
+                )
+
+                // Pasa al campo de respuesta
+                etRespuesta.requestFocus()
+                mostrarTecladoSistema(etRespuesta)
+            }
+            .show()
+    }
+
+    // ═══════════════════════════════════════════════
     // EVENTOS
     // ═══════════════════════════════════════════════
 
@@ -486,7 +508,6 @@ class AuthActivity : AppCompatActivity() {
                     count: Int,
                     after: Int
                 ) {
-                    // Sin acción.
                 }
 
                 override fun onTextChanged(
@@ -495,7 +516,6 @@ class AuthActivity : AppCompatActivity() {
                     before: Int,
                     count: Int
                 ) {
-                    // Sin acción.
                 }
 
                 override fun afterTextChanged(
@@ -549,24 +569,29 @@ class AuthActivity : AppCompatActivity() {
 
         etPin.visibility = View.VISIBLE
         etPinConfirm.visibility = View.VISIBLE
-        etPregunta.visibility = View.VISIBLE
+        tvPregunta.visibility = View.VISIBLE
         etRespuesta.visibility = View.VISIBLE
+        layoutPhoneAlert.visibility = View.VISIBLE
 
         btnAccion.visibility = View.VISIBLE
         tvOlvide.visibility = View.GONE
 
         etPin.isEnabled = true
         etPinConfirm.isEnabled = true
-        etPregunta.isEnabled = true
+        tvPregunta.isClickable = true
         etRespuesta.isEnabled = true
+        etPhoneAlert.isEnabled = true
 
         btnAccion.text = "CREAR PIN"
 
         etPin.hint = "PIN de 4 dígitos"
         etPinConfirm.hint = "Confirmar PIN"
-        etPregunta.hint =
-            "Ejemplo: nombre de tu mascota"
+        tvPregunta.text = ""
+        tvPregunta.hint = "Selecciona una pregunta secreta"
         etRespuesta.hint = "Tu respuesta"
+        etPhoneAlert.hint = "9XX XXX XXX"
+
+        preguntaSeleccionada = -1
 
         limpiarCampos()
         limpiarErrores()
@@ -600,8 +625,9 @@ class AuthActivity : AppCompatActivity() {
 
         etPin.visibility = View.VISIBLE
         etPinConfirm.visibility = View.GONE
-        etPregunta.visibility = View.GONE
+        tvPregunta.visibility = View.GONE
         etRespuesta.visibility = View.GONE
+        layoutPhoneAlert.visibility = View.GONE
 
         btnAccion.visibility = View.GONE
         tvOlvide.visibility = View.VISIBLE
@@ -630,10 +656,19 @@ class AuthActivity : AppCompatActivity() {
             MODE_PRIVATE
         )
 
-        val pregunta = prefs.getString(
-            KEY_PREGUNTA,
-            ""
+        val indexGuardado = prefs.getInt(
+            KEY_PREGUNTA_INDEX,
+            -1
         )
+
+        // Compatibilidad: si no hay index, busca texto viejo
+        val preguntaTexto = if (
+            indexGuardado in PREGUNTAS_SECRETAS.indices
+        ) {
+            PREGUNTAS_SECRETAS[indexGuardado]
+        } else {
+            prefs.getString(KEY_PREGUNTA, "Pregunta no disponible")
+        }
 
         tvTitulo.text = "Recuperar acceso"
 
@@ -642,8 +677,9 @@ class AuthActivity : AppCompatActivity() {
 
         etPin.visibility = View.GONE
         etPinConfirm.visibility = View.GONE
+        layoutPhoneAlert.visibility = View.GONE
 
-        etPregunta.visibility = View.VISIBLE
+        tvPregunta.visibility = View.VISIBLE
         etRespuesta.visibility = View.VISIBLE
 
         btnAccion.visibility = View.VISIBLE
@@ -651,8 +687,8 @@ class AuthActivity : AppCompatActivity() {
 
         btnAccion.text = "VERIFICAR RESPUESTA"
 
-        etPregunta.setText(pregunta)
-        etPregunta.isEnabled = false
+        tvPregunta.text = preguntaTexto
+        tvPregunta.isClickable = false
 
         etRespuesta.isEnabled = true
         etRespuesta.setText("")
@@ -681,8 +717,9 @@ class AuthActivity : AppCompatActivity() {
 
         etPin.visibility = View.VISIBLE
         etPinConfirm.visibility = View.VISIBLE
-        etPregunta.visibility = View.GONE
+        tvPregunta.visibility = View.GONE
         etRespuesta.visibility = View.GONE
+        layoutPhoneAlert.visibility = View.GONE
 
         btnAccion.visibility = View.VISIBLE
         tvOlvide.visibility = View.GONE
@@ -713,11 +750,13 @@ class AuthActivity : AppCompatActivity() {
         val pinConfirm =
             etPinConfirm.text.toString().trim()
 
-        val pregunta =
-            etPregunta.text.toString().trim()
-
         val respuesta =
             etRespuesta.text.toString().trim()
+
+        val telefono = etPhoneAlert.text.toString()
+            .trim()
+            .replace(" ", "")
+            .replace("-", "")
 
         if (pin.length != 4) {
             mostrarErrorCampos(
@@ -747,12 +786,24 @@ class AuthActivity : AppCompatActivity() {
             return
         }
 
-        if (pregunta.isEmpty()) {
-            mostrarErrorCampos(
-                mensaje = "Escribe una pregunta secreta",
-                limpiar = false,
-                etPregunta
+        if (preguntaSeleccionada < 0) {
+            tvPregunta.setBackgroundResource(
+                R.drawable.input_bg_error
             )
+            animarSacudida(tvPregunta)
+            ejecutarRespuestaTactil(tvPregunta)
+
+            Toast.makeText(
+                this,
+                "Selecciona una pregunta secreta",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            tvPregunta.postDelayed({
+                tvPregunta.setBackgroundResource(
+                    R.drawable.input_bg
+                )
+            }, 900L)
             return
         }
 
@@ -765,6 +816,16 @@ class AuthActivity : AppCompatActivity() {
             return
         }
 
+        if (telefono.length < 9) {
+            mostrarErrorCampos(
+                mensaje = "Ingresa un número válido (mín. 9 dígitos)",
+                limpiar = false,
+                etPhoneAlert
+            )
+            return
+        }
+
+        // Guardar PIN y pregunta/respuesta
         val prefs = getSharedPreferences(
             PREFS,
             MODE_PRIVATE
@@ -775,9 +836,9 @@ class AuthActivity : AppCompatActivity() {
                 KEY_PIN,
                 pin.hashCode().toString()
             )
-            .putString(
-                KEY_PREGUNTA,
-                pregunta
+            .putInt(
+                KEY_PREGUNTA_INDEX,
+                preguntaSeleccionada
             )
             .putString(
                 KEY_RESPUESTA,
@@ -785,6 +846,18 @@ class AuthActivity : AppCompatActivity() {
                     .lowercase(Locale.ROOT)
                     .hashCode()
                     .toString()
+            )
+            .apply()
+
+        // Guardar número de alerta en la misma config
+        // que usa ConfigProfileActivity
+        getSharedPreferences(
+            ConfigProfileActivity.PREFS,
+            MODE_PRIVATE
+        ).edit()
+            .putString(
+                ConfigProfileActivity.KEY_PHONE,
+                telefono
             )
             .apply()
 
@@ -1193,8 +1266,8 @@ class AuthActivity : AppCompatActivity() {
         val campos = arrayOf(
             etPin,
             etPinConfirm,
-            etPregunta,
-            etRespuesta
+            etRespuesta,
+            etPhoneAlert
         )
 
         campos.forEach { campo ->
@@ -1204,13 +1277,19 @@ class AuthActivity : AppCompatActivity() {
                 R.drawable.input_bg
             )
         }
+
+        tvPregunta.setBackgroundResource(
+            R.drawable.input_bg
+        )
     }
 
     private fun limpiarCampos() {
         etPin.setText("")
         etPinConfirm.setText("")
-        etPregunta.setText("")
+        tvPregunta.text = ""
         etRespuesta.setText("")
+        etPhoneAlert.setText("")
+        preguntaSeleccionada = -1
     }
 
     private fun cancelarVerificacionAutomatica() {

@@ -56,11 +56,6 @@
         </activity>
 
         <activity
-            android:name=".PermissionsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.MT_GUARD" />
-
-        <activity
             android:name=".AuthActivity"
             android:exported="false"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
