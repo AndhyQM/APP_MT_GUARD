@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothStatusCodes
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -36,6 +37,26 @@ class BleManager(
         private const val TAG = "BleManager"
         private const val TARGET_NAME = "MT GUARD"
         private const val SCAN_TIMEOUT_MS = 15_000L
+
+        /*
+         * PROTOCOLO JSON DEL FIRMWARE MT GUARD
+         *
+         * Comandos:   {"cmd":"AUTH"} {"cmd":"ARRANCAR"} {"cmd":"STOP_START"}
+         *             {"cmd":"DESBLOQUEAR"} {"cmd":"VIAJE_SEGURO"} {"cmd":"GET"}
+         * Config:     {"vol":30,"tmo":5,"bcn":true,...}
+         * Reinicio:   {"rst":true}
+         *
+         * El firmware responde por APP_TX con JSON:
+         *   {"ok":true,...} / {"ok":false,"err":"..."} / {"tipo":"config",...}
+         */
+        private const val CMD_AUTH         = "{\"cmd\":\"AUTH\"}"
+        private const val CMD_ARRANCAR     = "{\"cmd\":\"ARRANCAR\"}"
+        private const val CMD_STOP_START   = "{\"cmd\":\"STOP_START\"}"
+        private const val CMD_DESBLOQUEAR  = "{\"cmd\":\"DESBLOQUEAR\"}"
+        private const val CMD_VIAJE_SEGURO = "{\"cmd\":\"VIAJE_SEGURO\"}"
+        private const val CMD_GET_CONFIG   = "{\"cmd\":\"GET\"}"
+        private const val CMD_BEACON_ON    = "{\"bcn\":true}"
+        private const val CMD_BEACON_OFF   = "{\"bcn\":false}"
 
         private val UUID_APP_SVC = UUID.fromString(
             "AC000001-0000-0000-0000-000000000000"
@@ -298,7 +319,7 @@ class BleManager(
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.i(
                         TAG,
-                        "Conectado GATT. Descubriendo servicios..."
+                        "Conectado GATT. Negociando MTU..."
                     )
 
                     sharedConnected = true
@@ -306,13 +327,28 @@ class BleManager(
 
                     notificarConexion(true)
 
-                    val started = bluetoothGatt.discoverServices()
+                    /*
+                     * CRÍTICO: el MTU por defecto es 23 bytes (20 útiles)
+                     * y el JSON de config del módulo mide ~150. Sin esto,
+                     * el firmware notifica y el stack trunca a 20 bytes
+                     * ("attribute value too long, truncated to 20").
+                     * El descubrimiento de servicios se hace DESPUÉS,
+                     * en onMtuChanged.
+                     */
+                    val mtuPedido = bluetoothGatt.requestMtu(512)
 
-                    if (!started) {
-                        notificarError(
-                            "No se pudo iniciar el descubrimiento " +
-                                    "de servicios"
-                        )
+                    if (!mtuPedido) {
+                        // Si no se pudo ni pedir, seguir igual con MTU 23
+                        Log.w(TAG, "requestMtu falló — descubriendo igual")
+
+                        val started = bluetoothGatt.discoverServices()
+
+                        if (!started) {
+                            notificarError(
+                                "No se pudo iniciar el descubrimiento " +
+                                        "de servicios"
+                            )
+                        }
                     }
                 }
 
@@ -337,6 +373,34 @@ class BleManager(
 
                     notificarConexion(false)
                 }
+            }
+        }
+
+        /*
+         * Llega cuando termina la negociación de MTU (bien o mal).
+         * Recién acá se descubren los servicios: si se hiciera antes,
+         * la suscripción a APP_TX podría completarse con MTU 23 y el
+         * primer SEND_CFG del firmware llegaría truncado.
+         */
+        @SuppressLint("MissingPermission")
+        override fun onMtuChanged(
+            bluetoothGatt: BluetoothGatt,
+            mtu: Int,
+            status: Int
+        ) {
+            Log.i(
+                TAG,
+                "MTU negociado: $mtu (status=$status). " +
+                        "Descubriendo servicios..."
+            )
+
+            val started = bluetoothGatt.discoverServices()
+
+            if (!started) {
+                notificarError(
+                    "No se pudo iniciar el descubrimiento " +
+                            "de servicios"
+                )
             }
         }
 
@@ -386,20 +450,34 @@ class BleManager(
                     .getDescriptor(UUID_CCCD)
 
                 if (descriptor != null) {
-                    descriptor.value =
-                        BluetoothGattDescriptor
-                            .ENABLE_NOTIFICATION_VALUE
+                    if (Build.VERSION.SDK_INT >=
+                        Build.VERSION_CODES.TIRAMISU
+                    ) {
+                        // API 33+: método nuevo, sin descriptor.value
+                        bluetoothGatt.writeDescriptor(
+                            descriptor,
+                            BluetoothGattDescriptor
+                                .ENABLE_NOTIFICATION_VALUE
+                        )
+                    } else {
+                        // Android 12 o menor: API legacy
+                        @Suppress("DEPRECATION")
+                        descriptor.value =
+                            BluetoothGattDescriptor
+                                .ENABLE_NOTIFICATION_VALUE
 
-                    bluetoothGatt.writeDescriptor(
-                        descriptor
-                    )
+                        @Suppress("DEPRECATION")
+                        bluetoothGatt.writeDescriptor(
+                            descriptor
+                        )
+                    }
                 }
             }
 
             /*
-             * NO envía "1" aquí. Solo notifica que los servicios
+             * NO envía AUTH aquí. Solo notifica que los servicios
              * están listos para que ScannerActivity navegue a
-             * MainActivity. La autenticación real (enviar "1")
+             * MainActivity. La autenticación real (AUTH/VIAJE_SEGURO)
              * se hace cuando el usuario presiona Viaje Seguro.
              */
             Log.i(TAG, "Servicios listos. Esperando activación...")
@@ -407,9 +485,27 @@ class BleManager(
             notificarAutenticado()
         }
 
+        /*
+         * API 33+ (Android 13 en adelante): el sistema entrega los
+         * datos directamente como parámetro, sin characteristic.value.
+         */
+        override fun onCharacteristicChanged(
+            bluetoothGatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            procesarDatos(value)
+        }
+
+        /*
+         * Android 12 o menor: el sistema sigue llamando a esta
+         * versión vieja. En Android 13+ NO se invoca (llama a la
+         * de arriba), así que no hay riesgo de procesar doble.
+         */
         @Deprecated(
-            "Método conservado para compatibilidad"
+            "Método conservado para Android 12 o menor"
         )
+        @Suppress("DEPRECATION")
         override fun onCharacteristicChanged(
             bluetoothGatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic
@@ -435,15 +531,17 @@ class BleManager(
 
     // ═══════════════════════════════════════════════
     // AUTENTICACIÓN Y COMANDOS
+    //
+    // El firmware exige autenticación (AUTH o VIAJE_SEGURO) SOLO
+    // para el arranque. La puerta funciona con la pura conexión,
+    // para poder abrir el carro ANTES de subirse.
     // ═══════════════════════════════════════════════
 
     /*
-     * Envía "1" al ESP32 y marca como autenticado.
-     * Se llama desde MainActivity al presionar Viaje Seguro,
-     * NO automáticamente al conectar.
+     * Envía {"cmd":"AUTH"} al ESP32 y marca como autenticado.
      */
     fun authenticate() {
-        val sent = enviarComando("1")
+        val sent = enviarComando(CMD_AUTH)
 
         if (sent) {
             sharedAuthenticated = true
@@ -453,50 +551,58 @@ class BleManager(
 
     fun sendArrancar() {
         if (!sharedAuthenticated) {
-            notificarError("Dispositivo no autenticado")
+            notificarError("Active Viaje Seguro primero")
             return
         }
 
-        enviarComando("ARRANCAR")
+        enviarComando(CMD_ARRANCAR)
     }
 
     fun sendDetenerArranque() {
         if (!sharedAuthenticated) return
 
-        enviarComando("STOP_START")
+        enviarComando(CMD_STOP_START)
     }
 
+    /*
+     * La puerta NO requiere Viaje Seguro: se puede desbloquear
+     * apenas hay conexión BLE. El firmware valida igual.
+     */
     fun sendDesbloquear() {
-        if (!sharedAuthenticated) {
-            notificarError("Dispositivo no autenticado")
-            return
-        }
-
-        enviarComando("DESBLOQUEAR")
+        enviarComando(CMD_DESBLOQUEAR)
     }
 
+    /*
+     * VIAJE_SEGURO ya autentica en el firmware (pone auth=true
+     * y enciende el beacon), así que no hace falta mandar AUTH
+     * por separado.
+     */
     fun sendIniciarViajeSeguro() {
-        if (!sharedAuthenticated) {
-            notificarError("Dispositivo no autenticado")
-            return
-        }
+        val sent = enviarComando(CMD_VIAJE_SEGURO)
 
-        enviarComando("VIAJE_SEGURO_ON")
+        if (sent) {
+            sharedAuthenticated = true
+            Log.i(TAG, "Viaje Seguro enviado — autenticado")
+        }
+    }
+
+    fun requestConfig() {
+        enviarComando(CMD_GET_CONFIG)
     }
 
     fun sendBeaconOn() {
-        enviarComando("BEACON_ON")
+        enviarComando(CMD_BEACON_ON)
     }
 
     fun sendBeaconOff() {
-        enviarComando("BEACON_OFF")
+        enviarComando(CMD_BEACON_OFF)
     }
 
+    /*
+     * Para las pantallas de configuración: manda el JSON tal cual
+     * (ej: {"vol":25,"tmo":10}). No requiere autenticación.
+     */
     fun sendCommand(command: String) {
-        if (!sharedAuthenticated) {
-            notificarError("Dispositivo no autenticado")
-            return
-        }
         enviarComando(command)
     }
 
@@ -515,17 +621,37 @@ class BleManager(
         }
 
         return try {
-            characteristic.value = command.toByteArray(
-                Charsets.UTF_8
-            )
+            val payload = command.toByteArray(Charsets.UTF_8)
 
-            characteristic.writeType =
-                BluetoothGattCharacteristic
-                    .WRITE_TYPE_DEFAULT
+            val sent: Boolean
 
-            val sent = bluetoothGatt.writeCharacteristic(
-                characteristic
-            )
+            if (Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.TIRAMISU
+            ) {
+                // API 33+: método nuevo, retorna código de estado
+                val status = bluetoothGatt.writeCharacteristic(
+                    characteristic,
+                    payload,
+                    BluetoothGattCharacteristic
+                        .WRITE_TYPE_DEFAULT
+                )
+
+                sent = (status == BluetoothStatusCodes.SUCCESS)
+
+            } else {
+                // Android 12 o menor: API legacy
+                @Suppress("DEPRECATION")
+                characteristic.value = payload
+
+                characteristic.writeType =
+                    BluetoothGattCharacteristic
+                        .WRITE_TYPE_DEFAULT
+
+                @Suppress("DEPRECATION")
+                sent = bluetoothGatt.writeCharacteristic(
+                    characteristic
+                )
+            }
 
             Log.d(
                 TAG,

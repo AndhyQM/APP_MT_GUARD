@@ -9,6 +9,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -28,7 +29,7 @@ class ScannerActivity : AppCompatActivity() {
         private const val TARGET_PREFIX = "MT GUARD"
         private const val SCAN_DURATION_MS = 20_000L
 
-        const val DEMO_MODE = true
+        const val DEMO_MODE = false
 
         private const val DEMO_SALTO_DIRECTO = false
         private const val DEMO_NOMBRE = "MT GUARD • EE01"
@@ -105,6 +106,31 @@ class ScannerActivity : AppCompatActivity() {
     }
 
     // ═══════════════════════════════════════════════
+    // TRANSICIÓN DE PANTALLA
+    // overridePendingTransition quedó deprecado en Android 14
+    // (API 34). En 14+ se usa overrideActivityTransition; en
+    // versiones anteriores, el método clásico silenciado.
+    // ═══════════════════════════════════════════════
+
+    private fun aplicarTransicionFade() {
+        if (Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+        ) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+        }
+    }
+
+    // ═══════════════════════════════════════════════
     // CONFIGURACIÓN INICIAL (batería + autoarranque)
     // Se pide UNA sola vez en la vida de la app,
     // después del login para no ensuciar la pantalla.
@@ -135,10 +161,7 @@ class ScannerActivity : AppCompatActivity() {
             startActivity(
                 Intent(this, ConfigPinActivity::class.java)
             )
-            overridePendingTransition(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
+            aplicarTransicionFade()
         }
     }
 
@@ -310,10 +333,7 @@ class ScannerActivity : AppCompatActivity() {
             intent.putExtra("DEVICE_ADDRESS", address)
             intent.putExtra("DEMO_MODE", true)
             startActivity(intent)
-            overridePendingTransition(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
+            aplicarTransicionFade()
             finish()
         }, 350L)
     }
@@ -671,10 +691,7 @@ class ScannerActivity : AppCompatActivity() {
                 bleManager.connectedDeviceAddress
             )
             startActivity(intent)
-            overridePendingTransition(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
+            aplicarTransicionFade()
             finish()
         }, 350L)
     }

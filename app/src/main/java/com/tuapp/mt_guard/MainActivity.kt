@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -247,12 +248,14 @@ class MainActivity : AppCompatActivity() {
                 Intent(this, ConfigPinActivity::class.java)
             )
 
-            overridePendingTransition(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
+            aplicarTransicionFade()
         }
 
+        /*
+         * DESBLOQUEAR PUERTA: solo requiere conexión BLE.
+         * NO depende de Viaje Seguro — es para abrir el carro
+         * antes de subirse.
+         */
         btnDesbloquear.setOnClickListener {
             if (!listoParaComandos()) {
                 mostrarMensajeNoConectado()
@@ -328,16 +331,18 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            /*
+             * VIAJE_SEGURO ya autentica en el firmware, no hace
+             * falta mandar AUTH aparte (además, dos escrituras GATT
+             * seguidas sin esperar el callback pueden perder la
+             * segunda en Android).
+             */
             if (!demoMode) {
-                bleManager.authenticate()
+                bleManager.sendIniciarViajeSeguro()
             }
 
             GuardService.autenticadoGlobal = true
             reproducirViajeSeguro()
-
-            if (!demoMode) {
-                bleManager.sendIniciarViajeSeguro()
-            }
 
             habilitarControles(true)
 
@@ -527,17 +532,29 @@ class MainActivity : AppCompatActivity() {
             )
 
             GuardService.autenticadoGlobal = false
+
+            // El firmware limpia auth al perder BLE: la app refleja
+            // lo mismo, para que al reconectar haya que reactivar
+            // Viaje Seguro.
+            if (viajeSeguroActivo) {
+                detenerViajeSeguro()
+            }
         }
 
         habilitarControles(connected)
     }
 
+    /*
+     * REGLAS DE HABILITACIÓN:
+     *   Viaje Seguro  → conectado y todavía no activo
+     *   Desbloquear   → SOLO conectado (independiente de Viaje Seguro)
+     *   Arrancar      → conectado Y Viaje Seguro activo
+     */
     private fun habilitarControles(enabled: Boolean) {
         btnViajeSeguro.isEnabled =
             enabled && !viajeSeguroActivo
 
-        btnDesbloquear.isEnabled =
-            enabled && viajeSeguroActivo
+        btnDesbloquear.isEnabled = enabled
 
         btnArrancar.isEnabled =
             enabled && viajeSeguroActivo
@@ -576,12 +593,32 @@ class MainActivity : AppCompatActivity() {
 
         startActivity(intent)
 
-        overridePendingTransition(
-            android.R.anim.fade_in,
-            android.R.anim.fade_out
-        )
+        aplicarTransicionFade()
 
         finish()
+    }
+
+    /*
+     * overridePendingTransition quedó deprecado en Android 14
+     * (API 34). En 14+ se usa overrideActivityTransition; en
+     * versiones anteriores, el método clásico silenciado.
+     */
+    private fun aplicarTransicionFade() {
+        if (Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+        ) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+        }
     }
 
     // ═══════════════════════════════════════════════
